@@ -179,6 +179,24 @@ export default function DiscrepanciesView() {
     };
   }, [discrepanciesData, registeredTechnicians, techFilter, period, customStart, customEnd]);
 
+  const cardsRaw = stats?.cardsRaw || [];
+
+  const { filteredCards, availableAuditors } = useMemo(() => {
+    if (!cardsRaw || cardsRaw.length === 0) return { filteredCards: [], availableAuditors: [] };
+    
+    const availableAuditors = Array.from(new Set(cardsRaw.map((c: any) => c.auditor))).sort() as string[];
+    
+    const filtered = cardsRaw.filter((c: any) => {
+       const searchLower = timelineSearch.toLowerCase();
+       if (timelineSearch && !c.title.toLowerCase().includes(searchLower) && !c.description.toLowerCase().includes(searchLower) && !c.technician.toLowerCase().includes(searchLower)) return false;
+       if (timelineAuditorFilter !== "all" && c.auditor !== timelineAuditorFilter) return false;
+       if (timelineSeverityFilter !== "all" && c.severity !== timelineSeverityFilter) return false;
+       return true;
+    }).slice(0, 50);
+
+    return { filteredCards: filtered, availableAuditors };
+  }, [cardsRaw, timelineSearch, timelineAuditorFilter, timelineSeverityFilter]);
+
   if (!stats) {
     return (
       <div className="flex flex-col items-center justify-center p-20 text-center space-y-6 animate-in fade-in zoom-in duration-500">
@@ -198,25 +216,9 @@ export default function DiscrepanciesView() {
     bestTechnicians, allTechniciansAsc, 
     auditors, allAuditors, 
     diagnostics, services, 
-    totalDiags, cardsRaw, colors,
+    totalDiags, colors,
     dateFilteredRecords
   } = stats;
-
-  const { filteredCards, availableAuditors } = useMemo(() => {
-    if (!cardsRaw) return { filteredCards: [], availableAuditors: [] };
-    
-    const availableAuditors = Array.from(new Set(cardsRaw.map((c: any) => c.auditor))).sort() as string[];
-    
-    const filtered = cardsRaw.filter((c: any) => {
-       const searchLower = timelineSearch.toLowerCase();
-       if (timelineSearch && !c.title.toLowerCase().includes(searchLower) && !c.description.toLowerCase().includes(searchLower) && !c.technician.toLowerCase().includes(searchLower)) return false;
-       if (timelineAuditorFilter !== "all" && c.auditor !== timelineAuditorFilter) return false;
-       if (timelineSeverityFilter !== "all" && c.severity !== timelineSeverityFilter) return false;
-       return true;
-    }).slice(0, 50);
-
-    return { filteredCards: filtered, availableAuditors };
-  }, [cardsRaw, timelineSearch, timelineAuditorFilter, timelineSeverityFilter]);
 
   const currentRankingList = 
     rankingModalOpen === 'infratores' ? allTechniciansDesc :

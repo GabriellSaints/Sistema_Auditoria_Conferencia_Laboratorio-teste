@@ -94,10 +94,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       supabase.from('users').select('*'),
       supabase.from('technicians').select('*'),
       supabase.from('auditors').select('*'),
-      supabase.from('import_history').select('*, users!imported_by(name, email)').order('created_at', { ascending: false }),
-      supabase.from('monitoring_records').select('*'),
-      supabase.from('discrepancies_records').select('*'),
-      supabase.from('attendance_records').select('*')
+      supabase.from('import_history').select('*, users!imported_by(name, email)').order('created_at', { ascending: false }).limit(50),
+      supabase.from('monitoring_records').select('*').order('created_at', { ascending: false }).limit(2000),
+      supabase.from('discrepancies_records').select('*').order('created_at', { ascending: false }).limit(2000),
+      supabase.from('attendance_records').select('*').order('created_at', { ascending: false }).limit(2000)
     ]);
 
     if (historyData) setImportHistory(historyData as any[]);
