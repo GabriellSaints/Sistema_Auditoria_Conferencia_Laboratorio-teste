@@ -218,8 +218,12 @@ export default function ImportPage() {
              setUploadStatus("error");
              return;
         }
-        setMonitoringData(tempParsedData);
-        navigate("/dashboard");
+        // Append locally so it stacks immediately before the websocket refresh
+        // Also the websocket might trigger a full reload anyway
+        setTimeout(() => {
+             navigate("/dashboard");
+             window.location.reload();
+        }, 500);
       } else if (importType === "discrepancies") {
         const { error } = await supabase.from('discrepancies_records').insert(payload);
         if (error) {
@@ -228,8 +232,10 @@ export default function ImportPage() {
              setUploadStatus("error");
              return;
         }
-        setDiscrepanciesData(tempParsedData);
-        navigate("/discrepancies");
+        setTimeout(() => {
+             navigate("/discrepancies");
+             window.location.reload();
+        }, 500);
       }
     }
   };
