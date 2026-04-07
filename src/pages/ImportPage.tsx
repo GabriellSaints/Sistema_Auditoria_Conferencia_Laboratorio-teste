@@ -10,6 +10,7 @@ import {
   Clock,
   XCircle,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
@@ -57,7 +58,7 @@ type ImportType = "monitoring" | "discrepancies";
 
 export default function ImportPage() {
   const navigate = useNavigate();
-  const { setMonitoringData, setDiscrepanciesData, setAttendanceData } = useData();
+  const { setMonitoringData, setDiscrepanciesData, setAttendanceData, currentUser, importHistory } = useData();
   const [importType, setImportType] = useState<ImportType>("monitoring");
   const [uploadStatus, setUploadStatus] = useState<
     "idle" | "validating" | "success" | "error"
@@ -178,7 +179,23 @@ export default function ImportPage() {
     if (uploadStatus === "success") {
       setUploadStatus("validating"); // Reutiliza este state para dar a sensação de loading ("Salvando...")
       
+      const { data: historyRes, error: historyErr } = await supabase.from('import_history').insert({
+        file_name: fileName,
+        module: importType,
+        imported_by: currentUser?.id
+      }).select('id').single();
+
+      if (historyErr || !historyRes) {
+        console.error("Supabase Error on import_history:", historyErr);
+        alert("Erro ao criar histórico do lote no Supabase.");
+        setUploadStatus("error");
+        return;
+      }
+
+      const importId = historyRes.id;
+
       const payload = tempParsedData.map(row => ({
+          import_id: importId,
           data_hora_abertura: row["DATA/HORA_ABERTURA"] ? String(row["DATA/HORA_ABERTURA"]) : null,
           status_mensagem_os: row["STATUS_MENSAGEM_OS"] || null,
           id_cliente: row["ID_CLIENTE"] ? String(row["ID_CLIENTE"]) : null,
@@ -214,6 +231,17 @@ export default function ImportPage() {
         setDiscrepanciesData(tempParsedData);
         navigate("/discrepancies");
       }
+    }
+  };
+
+  const handleDeleteHistory = async (id: string, fileNameDelete: string) => {
+    const confirm = window.confirm(`Tem certeza que deseja excluir em lote o arquivo "${fileNameDelete}"? Isso removerá os registros importados desta carga instantaneamente e afetará as visualizações de todos os usuários.`);
+    if (!confirm) return;
+
+    const { error } = await supabase.from('import_history').delete().eq('id', id);
+    if (error) {
+      console.error("Erro ao deletar lote:", error);
+      alert("Erro ao excluir lote de importação.");
     }
   };
 
@@ -582,6 +610,61 @@ export default function ImportPage() {
               +12
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        <h2 className="text-xl font-headline font-bold text-primary flex items-center gap-2">
+          <Clock className="w-5 h-5" /> Histórico Dinâmico de Lotes
+        </h2>
+        <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 overflow-hidden relative min-h-[150px]">
+          {importHistory.length === 0 ? (
+            <div className="p-10 flex flex-col items-center justify-center text-slate-400">
+               <span className="text-sm font-medium">Nenhum lote importado recentemente.</span>
+               <span className="text-xs">Os últimos arquivos consolidados aparecerão aqui.</span>
+            </div>
+          ) : (
+            <div className="divide-y divide-outline-variant/5">
+              {importHistory.map((history) => (
+                <div key={history.id} className="p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
+                   <div className="flex items-start gap-4">
+                     <div className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-lg flex items-center justify-center shrink-0">
+                       <FileText className="w-5 h-5" />
+                     </div>
+                     <div>
+                       <h3 className="text-sm font-bold text-slate-800 break-all">{history.file_name}</h3>
+                       <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-slate-500">
+                         <span className="flex items-center gap-1 font-medium bg-slate-100 px-2 py-0.5 rounded">
+                           {history.module === 'monitoring' ? <Users className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
+                           {history.module === 'monitoring' ? 'Monitoramento' : 'Divergências'}
+                         </span>
+                         <span className="flex items-center gap-1">
+                           <Clock className="w-3 h-3" />
+                           {new Date(history.created_at).toLocaleString('pt-BR')}
+                         </span>
+                         {history.users?.name && (
+                           <span className="flex items-center gap-1">
+                             <span className="w-4 h-4 bg-primary text-white rounded-full flex items-center justify-center text-[8px] font-bold">
+                               {history.users.name.charAt(0).toUpperCase()}
+                             </span>
+                             {history.users.name}
+                           </span>
+                         )}
+                       </div>
+                     </div>
+                   </div>
+                   
+                   <button 
+                     onClick={() => handleDeleteHistory(history.id, history.file_name)}
+                     className="px-3 py-2 bg-error-container/30 text-error rounded hover:bg-error-container cursor-pointer transition-colors flex items-center gap-2 text-xs font-bold"
+                     title={`Excluir registros de ${history.file_name}`}
+                   >
+                     <Trash2 className="w-4 h-4" /> Excluir Lote
+                   </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

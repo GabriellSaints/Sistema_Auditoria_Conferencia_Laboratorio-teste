@@ -23,6 +23,15 @@ export interface MonitoringRecord {
   "DATA/HORA_FECHAMENTO": string | number;
 }
 
+export interface ImportHistoryRecord {
+  id: string;
+  file_name: string;
+  module: string;
+  imported_by: string;
+  created_at: string;
+  users?: { name: string; email: string };
+}
+
 interface DataContextType {
   monitoringData: MonitoringRecord[];
   setMonitoringData: (data: MonitoringRecord[]) => void;
@@ -30,6 +39,8 @@ interface DataContextType {
   setDiscrepanciesData: (data: MonitoringRecord[]) => void;
   attendanceData: AttendanceRecord[];
   setAttendanceData: (data: AttendanceRecord[]) => void;
+  importHistory: ImportHistoryRecord[];
+  setImportHistory: (data: ImportHistoryRecord[]) => void;
   
   // Registries
   users: UserConfig[];
@@ -59,6 +70,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [monitoringData, setMonitoringData] = useState<MonitoringRecord[]>([]);
   const [discrepanciesData, setDiscrepanciesData] = useState<MonitoringRecord[]>([]);
   const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([]);
+  const [importHistory, setImportHistory] = useState<ImportHistoryRecord[]>([]);
 
   // Supabase fetched states
   const [users, setUsers] = useState<UserConfig[]>([]);
@@ -70,11 +82,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [authLoading, setAuthLoading] = useState(true);
 
   const loadSupabaseData = async () => {
-    const [{ data: usersData }, { data: techsData }, { data: audsData }] = await Promise.all([
+    const [
+      { data: usersData }, 
+      { data: techsData }, 
+      { data: audsData },
+      { data: historyData },
+      { data: monitoringDataRes },
+      { data: discrepanciesDataRes },
+      { data: attendanceDataRes }
+    ] = await Promise.all([
       supabase.from('users').select('*'),
       supabase.from('technicians').select('*'),
-      supabase.from('auditors').select('*')
+      supabase.from('auditors').select('*'),
+      supabase.from('import_history').select('*, users!imported_by(name, email)').order('created_at', { ascending: false }),
+      supabase.from('monitoring_records').select('*'),
+      supabase.from('discrepancies_records').select('*'),
+      supabase.from('attendance_records').select('*')
     ]);
+
+    if (historyData) setImportHistory(historyData as any[]);
+    if (monitoringDataRes) setMonitoringData(monitoringDataRes.map(mapSupabaseToLocal) as any[]);
+    if (discrepanciesDataRes) setDiscrepanciesData(discrepanciesDataRes.map(mapSupabaseToLocal) as any[]);
+    if (attendanceDataRes) setAttendanceData(attendanceDataRes as any[]);
 
     if (usersData) {
       setUsers(usersData.map(u => ({
@@ -152,8 +181,43 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setAuthLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
+
+  // WebSockets Real-time for Import History and Records Sync
+  useEffect(() => {
+    const channel = supabase.channel('realtime-imports')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'import_history' },
+        () => {
+          // Quando houver insert, update ou delete em import_history, re-carregamos a base
+          loadSupabaseData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const mapSupabaseToLocal = (row: any): Partial<MonitoringRecord> => ({
+    "DATA/HORA_ABERTURA": row.data_hora_abertura,
+    "STATUS_MENSAGEM_OS": row.status_mensagem_os,
+    "ID_CLIENTE": row.id_cliente,
+    "CLIENTE": row.cliente,
+    "ASSUNTO_SERVIÇO_REALIZADO": row.assunto_servico_realizado,
+    "AUDITOR": row.auditor,
+    "TECNICO": row.tecnico,
+    "ASSUNTO_OS": row.assunto_os,
+    "DIAGNOSTICO_MENSAGEM_OS": row.diagnostico_mensagem_os,
+    "MENSAGEM_OS": row.mensagem_os,
+    "PROXIMA_TAREFA": row.proxima_tarefa,
+    "DATA/HORA_FECHAMENTO": row.data_hora_fechamento,
+  });
 
   // Sync currentUser with local updates (like photoUrl, roles, etc)
   useEffect(() => {
@@ -172,6 +236,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       monitoringData, setMonitoringData,
       discrepanciesData, setDiscrepanciesData,
       attendanceData, setAttendanceData,
+      importHistory, setImportHistory,
       users, setUsers,
       technicians, setTechnicians,
       auditors, setAuditors,
