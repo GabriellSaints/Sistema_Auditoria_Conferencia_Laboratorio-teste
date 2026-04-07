@@ -290,6 +290,9 @@ export default function AdminPanel() {
         }
         
         try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const token = sessionData?.session?.access_token;
+            
             const { data, error } = await supabase.functions.invoke('create-admin-user', {
                 body: {
                     email: userEmail,
@@ -297,7 +300,10 @@ export default function AdminPanel() {
                     name: userName,
                     role: userRole,
                     permissions: userPermissions
-                }
+                },
+                headers: token ? {
+                    Authorization: `Bearer ${token}`
+                } : undefined
             });
             
             if (error || !data || data.error) {
