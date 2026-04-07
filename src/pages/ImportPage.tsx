@@ -11,10 +11,9 @@ import {
   XCircle,
   Loader2,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { useData } from "../context/DataContext";
-import { Module } from "../types";
 
 const MONITORING_COLUMNS = [
   "DATA/HORA_ABERTURA",
@@ -55,11 +54,8 @@ const ATTENDANCE_COLUMNS = [
 
 type ImportType = "monitoring" | "discrepancies";
 
-interface ImportViewProps {
-  onNavigate?: (module: Module) => void;
-}
-
-export default function ImportView({ onNavigate }: ImportViewProps = {}) {
+export default function ImportPage() {
+  const navigate = useNavigate();
   const { setMonitoringData, setDiscrepanciesData, setAttendanceData } = useData();
   const [importType, setImportType] = useState<ImportType>("monitoring");
   const [uploadStatus, setUploadStatus] = useState<
@@ -181,10 +177,10 @@ export default function ImportView({ onNavigate }: ImportViewProps = {}) {
     if (uploadStatus === "success") {
       if (importType === "monitoring") {
         setMonitoringData(tempParsedData);
-        if (onNavigate) onNavigate("monitoring");
+        navigate("/dashboard");
       } else if (importType === "discrepancies") {
         setDiscrepanciesData(tempParsedData);
-        if (onNavigate) onNavigate("discrepancies");
+        navigate("/discrepancies");
       }
     }
   };

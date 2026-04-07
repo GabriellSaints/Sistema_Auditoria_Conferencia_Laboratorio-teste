@@ -466,7 +466,7 @@ export default function AdminPanel() {
                             <div className="space-y-4">
                                 <div className="pl-2 border-l-2 border-indigo-200">
                                     <label className="block text-[11px] font-bold text-slate-500 mb-2">Horário Seg-Sex</label>
-                                    <div className="grid grid-cols-4 gap-2">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                         <div>
                                             <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">Entrada</label>
                                             <input type="time" value={escala.entrada} onChange={e => setEscala({...escala, entrada: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />
@@ -488,7 +488,7 @@ export default function AdminPanel() {
 
                                 <div className="pl-2 border-l-2 border-amber-200">
                                     <label className="block text-[11px] font-bold text-amber-600 mb-2">Horário Sábado</label>
-                                    <div className="grid grid-cols-4 gap-2">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                         <div>
                                             <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">Entrada</label>
                                             <input type="time" value={escalaAltSabado.entrada} onChange={e => setEscalaAltSabado({...escalaAltSabado, entrada: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />
@@ -516,7 +516,7 @@ export default function AdminPanel() {
                             <div className="space-y-4">
                                 <div className="pl-2 border-l-2 border-slate-300">
                                     <label className="block text-[11px] font-bold text-slate-500 mb-2">Horário Seg-Qui (Compensado)</label>
-                                    <div className="grid grid-cols-4 gap-2">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                         <div>
                                             <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">Entrada</label>
                                             <input type="time" value={escalaAltSegSexFolga.entrada} onChange={e => setEscalaAltSegSexFolga({...escalaAltSegSexFolga, entrada: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />
@@ -537,7 +537,7 @@ export default function AdminPanel() {
                                 </div>
                                 <div className="pl-2 border-l-2 border-teal-300">
                                     <label className="block text-[11px] font-bold text-teal-600 mb-2">Horário Sexta</label>
-                                    <div className="grid grid-cols-4 gap-2">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                         <div>
                                             <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">Entrada</label>
                                             <input type="time" value={escalaAltSextaFolga.entrada} onChange={e => setEscalaAltSextaFolga({...escalaAltSextaFolga, entrada: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />

@@ -1,14 +1,14 @@
-import React, { useState } from "react";
-import { Module } from "./types";
-import Sidebar from "./components/Sidebar";
-import TopBar from "./components/TopBar";
-import ImportView from "./components/ImportView";
-import MonitoringView from "./components/MonitoringView";
-import DiscrepanciesView from "./components/DiscrepanciesView";
-import AttendanceView from "./components/AttendanceView";
-import RankingView from "./components/RankingView";
-import AdminPanel from "./components/AdminPanel";
-import LoginView from "./components/LoginView";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import Sidebar from "./components/layout/Sidebar";
+import TopBar from "./components/layout/TopBar";
+import ImportPage from "./pages/ImportPage";
+import DashboardPage from "./pages/DashboardPage";
+import DiscrepanciesPage from "./pages/DiscrepanciesPage";
+import AttendancePage from "./pages/AttendancePage";
+import RankingPage from "./pages/RankingPage";
+import AdminPage from "./pages/AdminPage";
+import LoginPage from "./pages/LoginPage";
 import { motion, AnimatePresence } from "motion/react";
 import { DataProvider, useData } from "./context/DataContext";
 
@@ -20,10 +20,7 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
-class ErrorBoundary extends React.Component<
-  ErrorBoundaryProps,
-  ErrorBoundaryState
-> {
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = { hasError: false, error: null };
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
@@ -37,25 +34,11 @@ class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div
-          style={{
-            padding: "20px",
-            background: "#ffe6e6",
-            color: "#8b0000",
-            fontFamily: "monospace",
-          }}
-        >
+        <div style={{ padding: "20px", background: "#ffe6e6", color: "#8b0000", fontFamily: "monospace" }}>
           <h2>Algo quebrou a interface (Erro do React)</h2>
-          <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-            {this.state.error?.toString()}
-          </pre>
-          <pre style={{ marginTop: "10px", fontSize: "11px" }}>
-            {this.state.error?.stack}
-          </pre>
-          <button
-            onClick={() => window.location.reload()}
-            style={{ padding: "10px", background: "black", color: "white" }}
-          >
+          <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{this.state.error?.toString()}</pre>
+          <pre style={{ marginTop: "10px", fontSize: "11px" }}>{this.state.error?.stack}</pre>
+          <button onClick={() => window.location.reload()} style={{ padding: "10px", background: "black", color: "white" }}>
             Recarregar Pagina
           </button>
         </div>
@@ -65,91 +48,74 @@ class ErrorBoundary extends React.Component<
   }
 }
 
-function AppContent() {
+function AuthenticatedLayout() {
   const { currentUser } = useData();
-  const defaultModule = currentUser?.role === 'viewer' ? 'monitoring' : 'import';
-  const [activeModule, setActiveModule] = useState<Module>(defaultModule);
+  const location = useLocation();
 
   React.useEffect(() => {
-    const handleNav = (e: any) => {
-      setActiveModule("admin");
-    };
-    window.addEventListener("navigateAdmin", handleNav);
-    
     // Iniciar dark mode a partir do localStorage
     if (localStorage.getItem("theme") === "dark") {
       document.documentElement.classList.add("dark");
     }
-    
-    return () => window.removeEventListener("navigateAdmin", handleNav);
   }, []);
 
   if (!currentUser) {
-      return <LoginView />;
+      return <Navigate to="/login" replace />;
   }
 
-  const renderModule = () => {
-    switch (activeModule) {
-      case "import":
-        return <ImportView onNavigate={setActiveModule} />;
-      case "monitoring":
-        return <MonitoringView />;
-      case "discrepancies":
-        return <DiscrepanciesView />;
-      case "attendance":
-        return <AttendanceView />;
-      case "ranking":
-        return <RankingView />;
-      case "admin":
-        return <AdminPanel />;
-      default:
-        return <MonitoringView />;
-    }
-  };
-
-  const getModuleTitle = () => {
-    switch (activeModule) {
-      case "import":
-        return "Importação de Dados";
-      case "monitoring":
-        return "Monitoramento da Equipe";
-      case "discrepancies":
-        return "Divergências Técnicas";
-      case "attendance":
-        return "Atrasos de Ponto";
-      case "ranking":
-        return "Ranking Geral";
-      case "admin":
-        return "Configurações Globais";
-      default:
-        return "";
-    }
+  const getModuleTitle = (path: string) => {
+    if (path.startsWith("/admin")) return "Configurações Globais";
+    if (path.startsWith("/import")) return "Importação de Dados";
+    if (path.startsWith("/discrepancies")) return "Divergências Técnicas";
+    if (path.startsWith("/attendance")) return "Atrasos de Ponto";
+    if (path.startsWith("/ranking")) return "Ranking Geral";
+    return "Monitoramento da Equipe";
   };
 
   return (
     <div className="min-h-screen bg-surface flex">
-      <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} />
+      <Sidebar />
 
       <main className="flex-1 ml-72 min-h-screen flex flex-col">
-        <TopBar title={getModuleTitle()} />
+        <TopBar title={getModuleTitle(location.pathname)} />
 
         <div className="flex-1 mt-16 p-10 overflow-y-auto">
           <ErrorBoundary>
             <AnimatePresence mode="wait">
               <motion.div
-                key={activeModule}
+                key={location.pathname}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
               >
-                {renderModule()}
+                <Routes location={location}>
+                   <Route path="/" element={<Navigate to={currentUser?.role === 'viewer' ? "/dashboard" : "/import"} replace />} />
+                   <Route path="/dashboard" element={<DashboardPage />} />
+                   <Route path="/import" element={<ImportPage />} />
+                   <Route path="/discrepancies" element={<DiscrepanciesPage />} />
+                   <Route path="/attendance" element={<AttendancePage />} />
+                   <Route path="/ranking" element={<RankingPage />} />
+                   <Route path="/admin" element={<AdminPage />} />
+                </Routes>
               </motion.div>
             </AnimatePresence>
           </ErrorBoundary>
         </div>
       </main>
     </div>
+  );
+}
+
+function AppContent() {
+  const { currentUser } = useData();
+  return (
+    <Router>
+        <Routes>
+            <Route path="/login" element={currentUser ? <Navigate to="/" replace /> : <LoginPage />} />
+            <Route path="/*" element={<AuthenticatedLayout />} />
+        </Routes>
+    </Router>
   );
 }
 

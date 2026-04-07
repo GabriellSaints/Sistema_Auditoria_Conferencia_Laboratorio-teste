@@ -20,6 +20,7 @@ export default function DiscrepanciesView() {
   const { discrepanciesData, technicians: registeredTechnicians } = useData();
   const [techFilter, setTechFilter] = useState("");
   const [selectedTech, setSelectedTech] = useState<string | null>(null);
+  const [timelineFilter, setTimelineFilter] = useState("");
   
   const [period, setPeriod] = useState<TimeFilter>("mes");
   const [customStart, setCustomStart] = useState<string>("");
@@ -163,6 +164,13 @@ export default function DiscrepanciesView() {
            technician: r.TECNICO || r.CLIENTE || "Desconhecido",
            severity: isCritical ? "high" : "medium"
         };
+    }).filter(card => {
+        if (!timelineFilter) return true;
+        const search = timelineFilter.toLowerCase();
+        return card.title.toLowerCase().includes(search) || 
+               card.description.toLowerCase().includes(search) || 
+               card.technician.toLowerCase().includes(search) || 
+               card.auditor.toLowerCase().includes(search);
     });
 
     return { 
@@ -423,8 +431,18 @@ export default function DiscrepanciesView() {
             </div>
         </div>
 
-        <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+        <div className="pt-4 border-t border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <h3 className="text-xl font-bold font-headline text-slate-800">Timeline de Divergências (Últimas 50 do período)</h3>
+            <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                    type="text"
+                    placeholder="Filtrar nesta timeline..."
+                    value={timelineFilter}
+                    onChange={(e) => setTimelineFilter(e.target.value)}
+                    className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent min-w-[260px] text-sm text-slate-700"
+                />
+            </div>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">

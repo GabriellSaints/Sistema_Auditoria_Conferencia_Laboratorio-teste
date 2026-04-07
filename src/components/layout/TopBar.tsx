@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Search, Bell, Settings, User, Wrench, ShieldCheck, Users, Palette, Moon } from "lucide-react";
-import { useData } from "../context/DataContext";
+import { useNavigate } from "react-router-dom";
+import { useData } from "../../context/DataContext";
 
 interface TopBarProps {
   title: string;
@@ -8,9 +9,21 @@ interface TopBarProps {
 
 export default function TopBar({ title }: TopBarProps) {
   const { currentUser } = useData();
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  const searchableModules = [
+    { name: "Monitoramento da Equipe", path: "/", icon: "Activity" },
+    { name: "Divergências Técnicas", path: "/discrepancies", icon: "AlertCircle" },
+    { name: "Atrasos de Ponto", path: "/attendance", icon: "Clock" },
+    { name: "Classificação Geral", path: "/ranking", icon: "Trophy" },
+    { name: "Cadastros e API", path: "/admin", icon: "Settings" },
+  ];
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -18,14 +31,19 @@ export default function TopBar({ title }: TopBarProps) {
         setIsMenuOpen(false);
         setIsThemeMenuOpen(false);
       }
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsSearchOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleNavigateAdmin = (tab: string) => {
-    // We dispatch a custom event that AppContent or AdminPanel can listen to
-    window.dispatchEvent(new CustomEvent('navigateAdmin', { detail: tab }));
+    navigate("/admin");
+    setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('navigateAdmin', { detail: tab }));
+    }, 50);
     setIsMenuOpen(false);
   };
 
@@ -38,13 +56,34 @@ export default function TopBar({ title }: TopBarProps) {
   return (
     <header className="fixed top-0 right-0 left-72 h-20 flex justify-between items-center px-10 z-40 bg-surface/90 backdrop-blur-2xl border-b border-outline-variant/5 transition-colors duration-300">
       <div className="flex items-center gap-4 flex-1">
-        <div className="relative w-80 group">
+        <div className="relative w-80 group" ref={searchRef}>
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary w-4 h-4 transition-colors" />
           <input
             type="text"
             placeholder="Pesquisar no sistema..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onFocus={() => setIsSearchOpen(true)}
             className="w-full bg-slate-200/40 hover:bg-slate-200/60 focus:bg-surface-container-lowest border border-transparent focus:border-primary/20 rounded-xl pl-11 pr-5 py-2.5 text-sm focus:ring-4 focus:ring-primary/5 transition-all outline-none dark:bg-slate-800/60 dark:hover:bg-slate-800 dark:focus:bg-slate-900 dark:text-slate-200 placeholder:text-slate-400 font-medium"
           />
+          
+          {isSearchOpen && searchTerm && (
+            <div className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 py-2 z-50">
+                {searchableModules.filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase())).length > 0 ? (
+                    searchableModules.filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase())).map((mod, i) => (
+                        <div 
+                           key={i} 
+                           onClick={() => { navigate(mod.path); setIsSearchOpen(false); setSearchTerm(""); }}
+                           className="px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer text-sm text-slate-700 dark:text-slate-300 font-medium transition-colors"
+                        >
+                            {mod.name}
+                        </div>
+                    ))
+                ) : (
+                    <div className="px-4 py-2 text-sm text-slate-400 text-center">Nenhum módulo encontrado</div>
+                )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -110,7 +149,7 @@ export default function TopBar({ title }: TopBarProps) {
 
         <div className="flex items-center gap-4 cursor-pointer group">
           <div className="text-right">
-            <p className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-300">{currentUser?.name || "Usuário"}</p>
+            <p className="text-sm font-bold text-[#0f172a] dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-300">{currentUser?.name || "Usuário"}</p>
             <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold">
               {currentUser?.role === 'admin' ? "Administrador" : currentUser?.role === 'gerente' ? "Gerente" : "Visualizador"}
             </p>

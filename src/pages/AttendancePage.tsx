@@ -288,12 +288,6 @@ export default function AttendanceView() {
             <div className="max-w-md">
               <h2 className="text-2xl font-headline font-bold text-slate-700 mb-2">Base de Ponto Vazia</h2>
               <p className="text-slate-500 font-medium mb-6">Você não possui nenhum registro de ponto gravado no sistema.</p>
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="mx-auto flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-lg font-bold hover:bg-primary/90 transition-all text-sm"
-              >
-                  <Plus className="w-4 h-4" /> Adicionar Primeiro Registro
-              </button>
             </div>
           </div>
       ) : (
