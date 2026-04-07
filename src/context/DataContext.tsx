@@ -81,23 +81,42 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<UserConfig | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  const fetchAllRows = async (table: string, limitAmt: number = 200000) => {
+    let allRows: any[] = [];
+    let from = 0;
+    const step = 1000;
+    while (from < limitAmt) {
+      const { data, error } = await supabase
+        .from(table)
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + step - 1);
+      
+      if (error || !data) break;
+      allRows = allRows.concat(data);
+      if (data.length < step) break;
+      from += step;
+    }
+    return allRows;
+  };
+
   const loadSupabaseData = async () => {
     const [
       { data: usersData }, 
       { data: techsData }, 
       { data: audsData },
       { data: historyData },
-      { data: monitoringDataRes },
-      { data: discrepanciesDataRes },
-      { data: attendanceDataRes }
+      monitoringDataRes,
+      discrepanciesDataRes,
+      attendanceDataRes
     ] = await Promise.all([
       supabase.from('users').select('*'),
       supabase.from('technicians').select('*'),
       supabase.from('auditors').select('*'),
       supabase.from('import_history').select('*, users!imported_by(name, email)').order('created_at', { ascending: false }).limit(50),
-      supabase.from('monitoring_records').select('*').order('created_at', { ascending: false }).limit(200000),
-      supabase.from('discrepancies_records').select('*').order('created_at', { ascending: false }).limit(200000),
-      supabase.from('attendance_records').select('*').order('created_at', { ascending: false }).limit(200000)
+      fetchAllRows('monitoring_records'),
+      fetchAllRows('discrepancies_records'),
+      fetchAllRows('attendance_records')
     ]);
 
     if (historyData) setImportHistory(historyData as any[]);
