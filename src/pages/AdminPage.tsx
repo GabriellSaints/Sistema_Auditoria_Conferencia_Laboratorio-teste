@@ -3,6 +3,7 @@ import { Users, UserPlus, Settings, Trash2, Building, ShieldCheck, Wrench, Searc
 import * as XLSX from "xlsx";
 import { useData } from "../context/DataContext";
 import { AuditorConfig, HorarioEscala, TechnicianConfig, UserConfig } from "../types";
+import { supabase } from "../lib/supabase";
 
 type Tab = "techs" | "auditors" | "users" | "theme";
 
@@ -159,7 +160,7 @@ export default function AdminPanel() {
   };
 
 
-  const handleAddTech = (e: React.FormEvent) => {
+  const handleAddTech = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!techName.trim()) return;
     const newTech: TechnicianConfig = {
@@ -167,10 +168,15 @@ export default function AdminPanel() {
       name: techName,
       status: techStatus
     };
+
+    const targetRow = { id: newTech.id, name: newTech.name, status: newTech.status };
+
     if (editingTechId) {
+        await supabase.from('technicians').update(targetRow).eq('id', newTech.id);
         setTechnicians(technicians.map(t => t.id === editingTechId ? newTech : t));
         cancelEditTech();
     } else {
+        await supabase.from('technicians').insert([targetRow]);
         setTechnicians([...technicians, newTech]);
         setTechName("");
     }
@@ -178,52 +184,52 @@ export default function AdminPanel() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleBulkImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBulkImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
         const data = new Uint8Array(event.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: "array" });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const rawData = XLSX.utils.sheet_to_json<any>(firstSheet, { header: 1 });
         
         let newTechs: TechnicianConfig[] = [];
+        const existingNames = new Set(technicians.map(t => t.name));
         
         for (let i = 0; i < rawData.length; i++) {
             const row = rawData[i];
-            const name = row[0]; // Extrai explicitamente da primeira coluna real
+            const name = row[0]; 
             
             if (name && typeof name === "string" && name.trim().length > 2) {
-                // Evita headers comuns na primeira coluna
-                if (name.toUpperCase().includes("NOME") || name.toUpperCase().includes("TÉCNICO") || name.toUpperCase().includes("TECNICO") || name.toUpperCase() === "N") continue;
+                const upperName = name.toUpperCase().trim();
+                if (upperName.includes("NOME") || upperName.includes("TÉCNICO") || upperName.includes("TECNICO") || upperName === "N") continue;
                 
-                newTechs.push({
-                    id: String(Date.now() + i) + Math.random(),
-                    name: name.toUpperCase().trim(),
-                    status: "Ativo"
-                });
+                if (!existingNames.has(upperName)) {
+                    newTechs.push({
+                        id: String(Date.now() + i) + Math.random(),
+                        name: upperName,
+                        status: "Ativo"
+                    });
+                    existingNames.add(upperName); // prevent duplicates within the same batch
+                }
             }
         }
         if (newTechs.length > 0) {
-            setTechnicians(prev => {
-                const map = new Map(prev.map(t => [t.name, t]));
-                newTechs.forEach(t => {
-                   if (!map.has(t.name)) map.set(t.name, t);
-                });
-                return Array.from(map.values());
-            });
-            alert(`${newTechs.length} técnicos lidos e armazenados.\nCadastros duplicados (nomes exatos) foram ignorados por segurança.`);
+            const rows = newTechs.map(t => ({ id: t.id, name: t.name, status: t.status }));
+            await supabase.from('technicians').insert(rows);
+            setTechnicians(prev => [...prev, ...newTechs]);
+            alert(`${newTechs.length} técnicos lidos e armazenados na nuvem.\nCadastros duplicados (nomes exatos) foram ignorados por segurança.`);
         } else {
-            alert("Nenhum nome válido encontrado na planilha. Certifique-se de que a lista de nomes está na primeira coluna.");
+            alert("Nenhum nome válido novo encontrado na planilha.");
         }
     };
     reader.readAsArrayBuffer(file);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleAddAuditor = (e: React.FormEvent) => {
+  const handleAddAuditor = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auditorName.trim()) return;
 
@@ -236,7 +242,7 @@ export default function AdminPanel() {
       id: editingAuditorId || String(Date.now()) + Math.random(),
       name: auditorName,
       status: auditorStatus,
-      escala: { ...escala }, // Fallback para manter padrao
+      escala: { ...escala }, 
       escalaSexta: tipoEscala === "PADRAO" ? { ...escalaSexta } : undefined,
       tipoEscala: tipoEscala,
       escalaAlternada: tipoEscala === "ALTERNADA" ? {
@@ -252,49 +258,79 @@ export default function AdminPanel() {
       } : undefined
     };
 
+    const targetRow = {
+      id: newAud.id,
+      name: newAud.name,
+      status: newAud.status,
+      tipo_escala: newAud.tipoEscala,
+      escala: newAud.escala,
+      escala_sexta: newAud.escalaSexta,
+      escala_alternada: newAud.escalaAlternada
+    };
+
     if (editingAuditorId) {
+        await supabase.from('auditors').update(targetRow).eq('id', newAud.id);
         setAuditors(auditors.map(a => a.id === editingAuditorId ? newAud : a));
         cancelEditAuditor();
     } else {
+        await supabase.from('auditors').insert([targetRow]);
         setAuditors([...auditors, newAud]);
         setAuditorName("");
     }
   };
 
-  const handleAddUser = (e: React.FormEvent) => {
+  const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!editingUserId) {
+        alert("Por questões de segurança com banco de dados remoto, Novas Credenciais devem ser criadas primeiro clicando em 'Criar Conta' na própria tela de Login. Por aqui, você só pode EDITAR as permissões das contas já existentes no momento.");
+        return;
+    }
+    
     if (!userName.trim() || !userEmail.trim()) return;
-    if (!editingUserId && !userPassword.trim()) return;
 
     const existingUser = users.find(u => u.id === editingUserId);
 
     const newUser: UserConfig = {
-      id: editingUserId || String(Date.now()) + Math.random(),
+      id: editingUserId,
       name: userName,
       email: userEmail,
-      password: userPassword.trim() ? userPassword : (existingUser?.password || ""),
+      password: existingUser?.password || "", // password shouldn't be altered here realistically if managed by identity, but keep it for types 
       role: userRole,
       permissions: userPermissions,
       active: true,
       photoUrl: userPhotoUrl || undefined
     };
 
-    if (editingUserId) {
-        setUsers(users.map(u => u.id === editingUserId ? newUser : u));
-        cancelEditUser();
-    } else {
-        setUsers([...users, newUser]);
-        setUserName("");
-        setUserEmail("");
-        setUserPassword("");
-        setUserPhotoUrl("");
-        setUserPermissions([]);
-    }
+    const targetRow = {
+       name: newUser.name,
+       role: newUser.role,
+       permissions: newUser.permissions,
+       photo_url: newUser.photoUrl
+    };
+
+    await supabase.from('users').update(targetRow).eq('id', newUser.id);
+    setUsers(users.map(u => u.id === editingUserId ? newUser : u));
+    cancelEditUser();
   };
 
-  const deleteTech = (id: string) => setTechnicians(technicians.filter(t => t.id !== id));
-  const deleteAuditor = (id: string) => setAuditors(auditors.filter(a => a.id !== id));
-  const deleteUser = (id: string) => setUsers(users.filter(u => u.id !== id));
+  const deleteTech = async (id: string) => {
+      if (window.confirm("Essa exclusão apaga esse técnico do servidor para o mundo todo. Continuar?")) {
+          await supabase.from('technicians').delete().eq('id', id);
+          setTechnicians(technicians.filter(t => t.id !== id));
+      }
+  };
+  const deleteAuditor = async (id: string) => {
+      if (window.confirm("Essa exclusão apaga esse colaborador do servidor para o mundo todo. Continuar?")) {
+          await supabase.from('auditors').delete().eq('id', id);
+          setAuditors(auditors.filter(a => a.id !== id));
+      }
+  };
+  const deleteUser = async (id: string) => {
+      if (window.confirm("Isso excluirá o perfil base, mas o e-mail de acesso oficial deve ser deletado diretamente no Supabase Auth. Continuar?")) {
+          await supabase.from('users').delete().eq('id', id);
+          setUsers(users.filter(u => u.id !== id));
+      }
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">

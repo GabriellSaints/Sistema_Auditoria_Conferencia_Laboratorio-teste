@@ -47,29 +47,7 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-// Hook para persistir estados no LocalStorage
-function usePersistedState<T>(key: string, defaultValue: T): [T, (val: T) => void] {
-    const [state, setState] = useState<T>(() => {
-        try {
-            const item = localStorage.getItem(key);
-            if (item) return JSON.parse(item);
-        } catch (e) {
-            console.error("Erro lendo localStorage", e);
-        }
-        return defaultValue;
-    });
 
-    const setPersistedState = (val: T) => {
-        setState(val);
-        try {
-            localStorage.setItem(key, JSON.stringify(val));
-        } catch (e) {
-            console.error("Erro salvando localStorage", e);
-        }
-    };
-
-    return [state, setPersistedState];
-}
 
 const DEFAULT_USERS: UserConfig[] = [
     { id: "1", name: "Administrador Master", email: "admin@empresa.com", password: "admin", role: "admin", active: true },
@@ -80,31 +58,71 @@ const DEFAULT_USERS: UserConfig[] = [
 export function DataProvider({ children }: { children: ReactNode }) {
   const [monitoringData, setMonitoringData] = useState<MonitoringRecord[]>([]);
   const [discrepanciesData, setDiscrepanciesData] = useState<MonitoringRecord[]>([]);
-  const [attendanceData, setAttendanceData] = usePersistedState<AttendanceRecord[]>("sys_attendance", []);
+  const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([]);
 
-  // Local storage synced states for Registries
-  const [users, setUsers] = usePersistedState<UserConfig[]>("sys_users", DEFAULT_USERS);
-  const [technicians, setTechnicians] = usePersistedState<TechnicianConfig[]>("sys_techs", []);
-  const [auditors, setAuditors] = usePersistedState<AuditorConfig[]>("sys_auditors", []);
+  // Supabase fetched states
+  const [users, setUsers] = useState<UserConfig[]>([]);
+  const [technicians, setTechnicians] = useState<TechnicianConfig[]>([]);
+  const [auditors, setAuditors] = useState<AuditorConfig[]>([]);
   
   // Supabase Auth State
   const [currentUser, setCurrentUser] = useState<UserConfig | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  const loadSupabaseData = async () => {
+    const [{ data: usersData }, { data: techsData }, { data: audsData }] = await Promise.all([
+      supabase.from('users').select('*'),
+      supabase.from('technicians').select('*'),
+      supabase.from('auditors').select('*')
+    ]);
+
+    if (usersData) {
+      setUsers(usersData.map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        active: u.active,
+        permissions: u.permissions || [],
+        photoUrl: u.photo_url
+      })));
+    }
+
+    if (techsData) {
+      setTechnicians(techsData.map(t => ({
+        id: t.id,
+        name: t.name,
+        status: t.status
+      })));
+    }
+
+    if (audsData) {
+      setAuditors(audsData.map(a => ({
+        id: a.id,
+        name: a.name,
+        status: a.status,
+        tipoEscala: a.tipo_escala,
+        escala: a.escala,
+        escalaSexta: a.escala_sexta,
+        escalaAlternada: a.escala_alternada
+      })));
+    }
+  };
+
   useEffect(() => {
     // Busca a sessão inicial
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        // Simulando a configuração default como admin.
-        // O ideal é buscar o banco de dados em public.users para pegar o role real.
         setCurrentUser({
           id: session.user.id,
           name: session.user.user_metadata?.name || session.user.email?.split("@")[0] || "Usuário",
           email: session.user.email || "",
           password: "",
           role: "admin",
-          active: true
+          active: true,
+          permissions: []
         });
+        loadSupabaseData(); // Carrega o banco real quando loga
       } else {
         setCurrentUser(null);
       }
@@ -120,16 +138,34 @@ export function DataProvider({ children }: { children: ReactNode }) {
           email: session.user.email || "",
           password: "",
           role: "admin",
-          active: true
+          active: true,
+          permissions: []
         });
+        loadSupabaseData(); // Recarrega se a sessao mudar
       } else {
         setCurrentUser(null);
+        // Clear data on logout
+        setUsers([]);
+        setTechnicians([]);
+        setAuditors([]);
       }
       setAuthLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Sync currentUser with local updates (like photoUrl, roles, etc)
+  useEffect(() => {
+    if (currentUser) {
+      const localProfile = users.find(u => u.email === currentUser.email);
+      if (localProfile) {
+        if (JSON.stringify(currentUser) !== JSON.stringify(localProfile)) {
+          setCurrentUser(localProfile);
+        }
+      }
+    }
+  }, [users, currentUser]);
 
   return (
     <DataContext.Provider value={{ 

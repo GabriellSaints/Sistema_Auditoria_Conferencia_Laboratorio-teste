@@ -14,6 +14,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { useData } from "../context/DataContext";
+import { supabase } from "../lib/supabase";
 
 const MONITORING_COLUMNS = [
   "DATA/HORA_ABERTURA",
@@ -173,12 +174,43 @@ export default function ImportPage() {
     e.target.value = "";
   };
 
-  const handleSaveAndStart = () => {
+  const handleSaveAndStart = async () => {
     if (uploadStatus === "success") {
+      setUploadStatus("validating"); // Reutiliza este state para dar a sensação de loading ("Salvando...")
+      
+      const payload = tempParsedData.map(row => ({
+          data_hora_abertura: row["DATA/HORA_ABERTURA"] ? String(row["DATA/HORA_ABERTURA"]) : null,
+          status_mensagem_os: row["STATUS_MENSAGEM_OS"] || null,
+          id_cliente: row["ID_CLIENTE"] ? String(row["ID_CLIENTE"]) : null,
+          cliente: row["CLIENTE"] || null,
+          assunto_servico_realizado: row["ASSUNTO_SERVIÇO_REALIZADO"] || row["ASSUNTO_SERVICO_REALIZADO"] || null,
+          auditor: row["AUDITOR"] || null,
+          tecnico: row["TECNICO"] || null,
+          assunto_os: row["ASSUNTO_OS"] || null,
+          diagnostico_mensagem_os: row["DIAGNOSTICO_MENSAGEM_OS"] || null,
+          mensagem_os: row["MENSAGEM_OS"] || null,
+          proxima_tarefa: row["PROXIMA_TAREFA"] || null,
+          data_hora_fechamento: row["DATA/HORA_FECHAMENTO"] ? String(row["DATA/HORA_FECHAMENTO"]) : null,
+      }));
+
       if (importType === "monitoring") {
+        const { error } = await supabase.from('monitoring_records').insert(payload);
+        if (error) {
+             console.error("Supabase Error:", error);
+             alert("Erro de conexão ao tentar salvar lote no Supabase.");
+             setUploadStatus("error");
+             return;
+        }
         setMonitoringData(tempParsedData);
         navigate("/dashboard");
       } else if (importType === "discrepancies") {
+        const { error } = await supabase.from('discrepancies_records').insert(payload);
+        if (error) {
+             console.error("Supabase Error:", error);
+             alert("Erro de conexão ao tentar salvar lote no Supabase.");
+             setUploadStatus("error");
+             return;
+        }
         setDiscrepanciesData(tempParsedData);
         navigate("/discrepancies");
       }
