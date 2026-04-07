@@ -210,27 +210,33 @@ export default function ImportPage() {
           data_hora_fechamento: row["DATA/HORA_FECHAMENTO"] ? String(row["DATA/HORA_FECHAMENTO"]) : null,
       }));
 
+      const chunkSize = 2000;
+      
       if (importType === "monitoring") {
-        const { error } = await supabase.from('monitoring_records').insert(payload);
-        if (error) {
-             console.error("Supabase Error:", error);
-             alert("Erro de conexão ao tentar salvar lote no Supabase.");
-             setUploadStatus("error");
-             return;
+        for (let i = 0; i < payload.length; i += chunkSize) {
+           const chunk = payload.slice(i, i + chunkSize);
+           const { error } = await supabase.from('monitoring_records').insert(chunk);
+           if (error) {
+                console.error("Supabase Error:", error);
+                alert("Erro ao salvar lote no Supabase (lote " + i + ").");
+                setUploadStatus("error");
+                return;
+           }
         }
-        // Append locally so it stacks immediately before the websocket refresh
-        // Also the websocket might trigger a full reload anyway
         setTimeout(() => {
              navigate("/dashboard");
              window.location.reload();
         }, 500);
       } else if (importType === "discrepancies") {
-        const { error } = await supabase.from('discrepancies_records').insert(payload);
-        if (error) {
-             console.error("Supabase Error:", error);
-             alert("Erro de conexão ao tentar salvar lote no Supabase.");
-             setUploadStatus("error");
-             return;
+        for (let i = 0; i < payload.length; i += chunkSize) {
+           const chunk = payload.slice(i, i + chunkSize);
+           const { error } = await supabase.from('discrepancies_records').insert(chunk);
+           if (error) {
+                console.error("Supabase Error:", error);
+                alert("Erro ao salvar lote no Supabase (lote " + i + ").");
+                setUploadStatus("error");
+                return;
+           }
         }
         setTimeout(() => {
              navigate("/discrepancies");
