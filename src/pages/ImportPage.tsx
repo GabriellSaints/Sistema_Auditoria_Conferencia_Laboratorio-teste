@@ -250,6 +250,11 @@ export default function ImportPage() {
     const confirm = window.confirm(`Tem certeza que deseja excluir em lote o arquivo "${fileNameDelete}"? Isso removerá os registros importados desta carga instantaneamente e afetará as visualizações de todos os usuários.`);
     if (!confirm) return;
 
+    // Delete associated child data first to prevent orphaned records in case FK constraint is just 'SET NULL'
+    await supabase.from('monitoring_records').delete().eq('import_id', id);
+    await supabase.from('discrepancies_records').delete().eq('import_id', id);
+    await supabase.from('attendance_records').delete().eq('import_id', id);
+
     const { error } = await supabase.from('import_history').delete().eq('id', id);
     if (error) {
       console.error("Erro ao deletar lote:", error);
