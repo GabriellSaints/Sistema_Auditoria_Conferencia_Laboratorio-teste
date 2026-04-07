@@ -281,12 +281,50 @@ export default function AdminPanel() {
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingUserId) {
-        alert("Por questões de segurança com banco de dados remoto, Novas Credenciais devem ser criadas primeiro clicando em 'Criar Conta' na própria tela de Login. Por aqui, você só pode EDITAR as permissões das contas já existentes no momento.");
-        return;
-    }
-    
     if (!userName.trim() || !userEmail.trim()) return;
+
+    if (!editingUserId) {
+        if (!userPassword.trim()) {
+             alert("Digite a senha provisória.");
+             return;
+        }
+        
+        try {
+            const { data, error } = await supabase.functions.invoke('create-admin-user', {
+                body: {
+                    email: userEmail,
+                    password: userPassword,
+                    name: userName,
+                    role: userRole,
+                    permissions: userPermissions
+                }
+            });
+            
+            if (error || !data || data.error) {
+                alert("Erro ao criar usuário: " + (error?.message || data?.error || "Desconhecido"));
+                return;
+            }
+            
+            alert("Conta criada com sucesso!");
+            cancelEditUser();
+            
+            const newUser: UserConfig = {
+               id: data.id,
+               name: userName,
+               email: userEmail,
+               role: userRole,
+               permissions: userPermissions,
+               active: true,
+               photoUrl: userPhotoUrl || undefined
+            };
+            setUsers([...users, newUser]);
+            return;
+        } catch (err) {
+            console.error(err);
+            alert("Erro na operação.");
+            return;
+        }
+    }
 
     const existingUser = users.find(u => u.id === editingUserId);
 
@@ -294,7 +332,7 @@ export default function AdminPanel() {
       id: editingUserId,
       name: userName,
       email: userEmail,
-      password: existingUser?.password || "", // password shouldn't be altered here realistically if managed by identity, but keep it for types 
+      password: existingUser?.password || "", // mantendo senha antiga para formatação via UI se houver edicao profunda futura
       role: userRole,
       permissions: userPermissions,
       active: true,

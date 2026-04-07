@@ -6,24 +6,19 @@ export default function LoginView() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isLogin, setIsLogin] = useState(true);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
         setError("Preencha o e-mail e a senha.");
-        setSuccess("");
         return;
     }
     
     setLoading(true);
     setError("");
-    setSuccess("");
 
     try {
-      if (isLogin) {
         const { error: authError } = await supabase.auth.signInWithPassword({
           email,
           password
@@ -36,22 +31,6 @@ export default function LoginView() {
                setError(authError.message);
           }
         }
-      } else {
-        const { data, error: authError } = await supabase.auth.signUp({
-          email,
-          password
-        });
-
-        if (authError) {
-          setError(authError.message);
-        } else {
-          if (data.user && data.session === null) {
-              setSuccess("Cadastro realizado! Verifique sua caixa de entrada para confirmar o e-mail.");
-          } else {
-              setSuccess("Cadastro realizado com sucesso!");
-          }
-        }
-      }
     } catch (err: any) {
       setError(err?.message || "Ocorreu um erro ao conectar no servidor.");
     } finally {
@@ -71,7 +50,7 @@ export default function LoginView() {
                 </div>
                 <h1 className="text-2xl font-black text-slate-800 dark:text-white font-headline">The Architect</h1>
                 <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mt-1 text-center">
-                    {isLogin ? "Acesse sua conta para continuar" : "Crie sua conta para começar"}
+                    Acesse sua conta para continuar
                 </p>
             </div>
 
@@ -80,12 +59,6 @@ export default function LoginView() {
                     <div className="bg-error/10 border border-error/20 text-error px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 animate-in fade-in zoom-in-95">
                         <ShieldAlert className="w-5 h-5 shrink-0" />
                         {error}
-                    </div>
-                )}
-                {success && (
-                    <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 animate-in fade-in zoom-in-95">
-                        <CheckCircle2 className="w-5 h-5 shrink-0" />
-                        {success}
                     </div>
                 )}
 
@@ -100,7 +73,6 @@ export default function LoginView() {
                                 onChange={(e) => {
                                     setEmail(e.target.value);
                                     setError("");
-                                    setSuccess("");
                                 }}
                                 placeholder="nome@empresa.com"
                                 className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors"
@@ -119,7 +91,6 @@ export default function LoginView() {
                                 onChange={(e) => {
                                     setPassword(e.target.value);
                                     setError("");
-                                    setSuccess("");
                                 }}
                                 placeholder="******"
                                 className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors"
@@ -135,25 +106,12 @@ export default function LoginView() {
                   className="w-full py-4 bg-slate-900 dark:bg-primary hover:bg-primary text-white rounded-xl font-black font-headline tracking-widest uppercase transition-all shadow-lg hover:shadow-primary/30 flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                     {loading ? (
-                       <><Loader2 className="w-5 h-5 animate-spin" /> {isLogin ? 'AUTENTICANDO...' : 'CRIANDO CONTA...'}</>
+                       <><Loader2 className="w-5 h-5 animate-spin" /> AUTENTICANDO...</>
                     ) : (
-                       <><Lock className="w-4 h-4 text-slate-400 dark:text-white group-hover:text-white transition-colors" /> {isLogin ? 'ACESSAR PLATAFORMA' : 'CRIAR CONTA'}</>
+                       <><Lock className="w-4 h-4 text-slate-400 dark:text-white group-hover:text-white transition-colors" /> ACESSAR PLATAFORMA</>
                     )}
                 </button>
             </form>
-            
-            <div className="mt-6 text-center">
-                <button 
-                    onClick={() => {
-                        setIsLogin(!isLogin);
-                        setError("");
-                        setSuccess("");
-                    }} 
-                    className="text-sm font-bold text-primary hover:text-indigo-600 transition-colors"
-                >
-                    {isLogin ? "Não possui conta? Cadastre-se" : "Já possui conta? Fazer Login"}
-                </button>
-            </div>
         </div>
         
         <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 text-center">
