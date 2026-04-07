@@ -416,19 +416,19 @@ export default function AdminPanel() {
                             <label className="block text-xs font-bold text-indigo-500 uppercase tracking-wider mb-3 flex items-center gap-1"><Clock className="w-4 h-4"/> Horário (Seg - Qui)</label>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-[10px] uppercase text-slate-400 font-bold mb-1">Entrada</label>
+                                    <label className="block text-[10px] uppercase text-slate-400 font-bold mb-1">ENTRADA</label>
                                     <input type="time" value={escala.entrada} onChange={e => setEscala({...escala, entrada: e.target.value})} className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded text-sm font-medium" />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] uppercase text-slate-400 font-bold mb-1">E. Almoço</label>
+                                    <label className="block text-[10px] uppercase text-slate-400 font-bold mb-1">E. ALMOÇO</label>
                                     <input type="time" value={escala.entradaAlmoco} onChange={e => setEscala({...escala, entradaAlmoco: e.target.value})} className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded text-sm font-medium" />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] uppercase text-slate-400 font-bold mb-1">S. Almoço</label>
+                                    <label className="block text-[10px] uppercase text-slate-400 font-bold mb-1">S. ALMOÇO</label>
                                     <input type="time" value={escala.saidaAlmoco} onChange={e => setEscala({...escala, saidaAlmoco: e.target.value})} className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded text-sm font-medium" />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] uppercase text-slate-400 font-bold mb-1">Saida</label>
+                                    <label className="block text-[10px] uppercase text-slate-400 font-bold mb-1">SAÍDA</label>
                                     <input type="time" value={escala.saida} onChange={e => setEscala({...escala, saida: e.target.value})} className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded text-sm font-medium" />
                                 </div>
                             </div>
@@ -438,19 +438,19 @@ export default function AdminPanel() {
                             <label className="block text-xs font-bold text-teal-600 uppercase tracking-wider mb-3 flex items-center gap-1"><Clock className="w-4 h-4"/> Horário (Sexta)</label>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-[10px] uppercase text-teal-500 font-bold mb-1">Entrada</label>
+                                    <label className="block text-[10px] uppercase text-teal-500 font-bold mb-1">ENTRADA</label>
                                     <input type="time" value={escalaSexta.entrada} onChange={e => setEscalaSexta({...escalaSexta, entrada: e.target.value})} className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded text-sm font-medium text-teal-700" />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] uppercase text-teal-500 font-bold mb-1">E. Almoço</label>
+                                    <label className="block text-[10px] uppercase text-teal-500 font-bold mb-1">E. ALMOÇO</label>
                                     <input type="time" value={escalaSexta.entradaAlmoco} onChange={e => setEscalaSexta({...escalaSexta, entradaAlmoco: e.target.value})} className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded text-sm font-medium text-teal-700" />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] uppercase text-teal-500 font-bold mb-1">S. Almoço</label>
+                                    <label className="block text-[10px] uppercase text-teal-500 font-bold mb-1">S. ALMOÇO</label>
                                     <input type="time" value={escalaSexta.saidaAlmoco} onChange={e => setEscalaSexta({...escalaSexta, saidaAlmoco: e.target.value})} className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded text-sm font-medium text-teal-700" />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] uppercase text-teal-500 font-bold mb-1">Saida</label>
+                                    <label className="block text-[10px] uppercase text-teal-500 font-bold mb-1">SAÍDA</label>
                                     <input type="time" value={escalaSexta.saida} onChange={e => setEscalaSexta({...escalaSexta, saida: e.target.value})} className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded text-sm font-medium text-teal-700" />
                                 </div>
                             </div>
@@ -466,21 +466,21 @@ export default function AdminPanel() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="pl-3 border-l-2 border-indigo-200">
                                     <label className="block text-[11px] font-bold text-slate-500 mb-2">Horário Seg a Sex</label>
-                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">Entrada</label>
+                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">ENTRADA</label>
                                             <input type="time" value={escala.entrada} onChange={e => setEscala({...escala, entrada: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />
                                         </div>
                                         <div>
-                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">E. Almoço</label>
+                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">E. ALMOÇO</label>
                                             <input type="time" value={escala.entradaAlmoco} onChange={e => setEscala({...escala, entradaAlmoco: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />
                                         </div>
                                         <div>
-                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">S. Almoço</label>
+                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">S. ALMOÇO</label>
                                             <input type="time" value={escala.saidaAlmoco} onChange={e => setEscala({...escala, saidaAlmoco: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />
                                         </div>
                                         <div>
-                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">Saida</label>
+                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">SAÍDA</label>
                                             <input type="time" value={escala.saida} onChange={e => setEscala({...escala, saida: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />
                                         </div>
                                     </div>
@@ -488,21 +488,21 @@ export default function AdminPanel() {
 
                                 <div className="pl-3 border-l-2 border-amber-200">
                                     <label className="block text-[11px] font-bold text-amber-600 mb-2">Horário Sábado</label>
-                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">Entrada</label>
+                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">ENTRADA</label>
                                             <input type="time" value={escalaAltSabado.entrada} onChange={e => setEscalaAltSabado({...escalaAltSabado, entrada: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />
                                         </div>
                                         <div>
-                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">E. Almoço</label>
+                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">E. ALMOÇO</label>
                                             <input type="time" value={escalaAltSabado.entradaAlmoco} onChange={e => setEscalaAltSabado({...escalaAltSabado, entradaAlmoco: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />
                                         </div>
                                         <div>
-                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">S. Almoço</label>
+                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">S. ALMOÇO</label>
                                             <input type="time" value={escalaAltSabado.saidaAlmoco} onChange={e => setEscalaAltSabado({...escalaAltSabado, saidaAlmoco: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />
                                         </div>
                                         <div>
-                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">Saida</label>
+                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">SAÍDA</label>
                                             <input type="time" value={escalaAltSabado.saida} onChange={e => setEscalaAltSabado({...escalaAltSabado, saida: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />
                                         </div>
                                     </div>
@@ -516,42 +516,42 @@ export default function AdminPanel() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="pl-3 border-l-2 border-slate-300">
                                     <label className="block text-[11px] font-bold text-slate-500 mb-2">Horário Seg a Qui (Compensado)</label>
-                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">Entrada</label>
+                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">ENTRADA</label>
                                             <input type="time" value={escalaAltSegSexFolga.entrada} onChange={e => setEscalaAltSegSexFolga({...escalaAltSegSexFolga, entrada: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />
                                         </div>
                                         <div>
-                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">E. Almoço</label>
+                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">E. ALMOÇO</label>
                                             <input type="time" value={escalaAltSegSexFolga.entradaAlmoco} onChange={e => setEscalaAltSegSexFolga({...escalaAltSegSexFolga, entradaAlmoco: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />
                                         </div>
                                         <div>
-                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">S. Almoço</label>
+                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">S. ALMOÇO</label>
                                             <input type="time" value={escalaAltSegSexFolga.saidaAlmoco} onChange={e => setEscalaAltSegSexFolga({...escalaAltSegSexFolga, saidaAlmoco: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />
                                         </div>
                                         <div>
-                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">Saida</label>
+                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">SAÍDA</label>
                                             <input type="time" value={escalaAltSegSexFolga.saida} onChange={e => setEscalaAltSegSexFolga({...escalaAltSegSexFolga, saida: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />
                                         </div>
                                     </div>
                                 </div>
                                 <div className="pl-3 border-l-2 border-teal-300">
                                     <label className="block text-[11px] font-bold text-teal-600 mb-2">Horário Sexta</label>
-                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">Entrada</label>
+                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">ENTRADA</label>
                                             <input type="time" value={escalaAltSextaFolga.entrada} onChange={e => setEscalaAltSextaFolga({...escalaAltSextaFolga, entrada: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />
                                         </div>
                                         <div>
-                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">E. Almoço</label>
+                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">E. ALMOÇO</label>
                                             <input type="time" value={escalaAltSextaFolga.entradaAlmoco} onChange={e => setEscalaAltSextaFolga({...escalaAltSextaFolga, entradaAlmoco: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />
                                         </div>
                                         <div>
-                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">S. Almoço</label>
+                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">S. ALMOÇO</label>
                                             <input type="time" value={escalaAltSextaFolga.saidaAlmoco} onChange={e => setEscalaAltSextaFolga({...escalaAltSextaFolga, saidaAlmoco: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />
                                         </div>
                                         <div>
-                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">Saida</label>
+                                            <label className="block text-[9px] uppercase text-slate-400 font-semibold mb-0.5">SAÍDA</label>
                                             <input type="time" value={escalaAltSextaFolga.saida} onChange={e => setEscalaAltSextaFolga({...escalaAltSextaFolga, saida: e.target.value})} className="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium" />
                                         </div>
                                     </div>
