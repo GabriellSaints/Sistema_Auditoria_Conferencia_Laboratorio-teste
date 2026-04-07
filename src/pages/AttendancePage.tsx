@@ -276,7 +276,7 @@ export default function AttendanceView() {
             onClick={() => setIsModalOpen(true)}
             className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-lg font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all uppercase tracking-widest text-sm"
         >
-            <Plus className="w-5 h-5" /> Adicionar Registro
+            <Plus className="w-5 h-5" /> NOVO REGISTRO
         </button>
       </div>
 

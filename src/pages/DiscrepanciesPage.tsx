@@ -20,12 +20,15 @@ export default function DiscrepanciesView() {
   const { discrepanciesData, technicians: registeredTechnicians } = useData();
   const [techFilter, setTechFilter] = useState("");
   const [selectedTech, setSelectedTech] = useState<string | null>(null);
-  const [timelineFilter, setTimelineFilter] = useState("");
   
   const [period, setPeriod] = useState<TimeFilter>("mes");
   const [customStart, setCustomStart] = useState<string>("");
   const [customEnd, setCustomEnd] = useState<string>("");
   const [rankingModalOpen, setRankingModalOpen] = useState<RankingType>(null);
+  
+  const [timelineSearch, setTimelineSearch] = useState("");
+  const [timelineAuditorFilter, setTimelineAuditorFilter] = useState("all");
+  const [timelineSeverityFilter, setTimelineSeverityFilter] = useState("all");
 
   const stats = useMemo(() => {
     if (!discrepanciesData || discrepanciesData.length === 0) return null;
@@ -143,7 +146,7 @@ export default function DiscrepanciesView() {
     const totalDiags = dateFilteredRecords.length;
     const colors = ["bg-primary", "bg-indigo-400", "bg-purple-400", "bg-rose-400"];
 
-    const cards = [...dateFilteredRecords].reverse().slice(0, 50).map((r, i) => {
+    const cardsRaw = [...dateFilteredRecords].reverse().map((r, i) => {
         let dateStr = String(r["DATA/HORA_FECHAMENTO"] || "");
         if (typeof r["DATA/HORA_FECHAMENTO"] === "number") {
              const tempDate = new Date((r["DATA/HORA_FECHAMENTO"] - 25569) * 86400 * 1000);
@@ -164,13 +167,6 @@ export default function DiscrepanciesView() {
            technician: r.TECNICO || r.CLIENTE || "Desconhecido",
            severity: isCritical ? "high" : "medium"
         };
-    }).filter(card => {
-        if (!timelineFilter) return true;
-        const search = timelineFilter.toLowerCase();
-        return card.title.toLowerCase().includes(search) || 
-               card.description.toLowerCase().includes(search) || 
-               card.technician.toLowerCase().includes(search) || 
-               card.auditor.toLowerCase().includes(search);
     });
 
     return { 
@@ -178,7 +174,7 @@ export default function DiscrepanciesView() {
         bestTechnicians, allTechniciansAsc, 
         auditors, allAuditors, 
         diagnostics, services, 
-        totalDiags, cards, colors,
+        totalDiags, cardsRaw, colors,
         dateFilteredRecords
     };
   }, [discrepanciesData, registeredTechnicians, techFilter, period, customStart, customEnd]);
@@ -202,9 +198,25 @@ export default function DiscrepanciesView() {
     bestTechnicians, allTechniciansAsc, 
     auditors, allAuditors, 
     diagnostics, services, 
-    totalDiags, cards, colors,
+    totalDiags, cardsRaw, colors,
     dateFilteredRecords
   } = stats;
+
+  const { filteredCards, availableAuditors } = useMemo(() => {
+    if (!cardsRaw) return { filteredCards: [], availableAuditors: [] };
+    
+    const availableAuditors = Array.from(new Set(cardsRaw.map((c: any) => c.auditor))).sort() as string[];
+    
+    const filtered = cardsRaw.filter((c: any) => {
+       const searchLower = timelineSearch.toLowerCase();
+       if (timelineSearch && !c.title.toLowerCase().includes(searchLower) && !c.description.toLowerCase().includes(searchLower) && !c.technician.toLowerCase().includes(searchLower)) return false;
+       if (timelineAuditorFilter !== "all" && c.auditor !== timelineAuditorFilter) return false;
+       if (timelineSeverityFilter !== "all" && c.severity !== timelineSeverityFilter) return false;
+       return true;
+    }).slice(0, 50);
+
+    return { filteredCards: filtered, availableAuditors };
+  }, [cardsRaw, timelineSearch, timelineAuditorFilter, timelineSeverityFilter]);
 
   const currentRankingList = 
     rankingModalOpen === 'infratores' ? allTechniciansDesc :
@@ -431,22 +443,61 @@ export default function DiscrepanciesView() {
             </div>
         </div>
 
-        <div className="pt-4 border-t border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h3 className="text-xl font-bold font-headline text-slate-800">Timeline de Divergências (Últimas 50 do período)</h3>
-            <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                    type="text"
-                    placeholder="Filtrar nesta timeline..."
-                    value={timelineFilter}
-                    onChange={(e) => setTimelineFilter(e.target.value)}
-                    className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent min-w-[260px] text-sm text-slate-700"
-                />
+        <div className="pt-6 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
+            <h3 className="text-xl font-bold font-headline text-slate-800">Timeline de Divergências <span className="text-sm font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full ml-2">50 mais recentes</span></h3>
+            
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                <div className="relative w-full sm:w-auto">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                        type="text"
+                        placeholder="Buscar na timeline..."
+                        value={timelineSearch}
+                        onChange={(e) => setTimelineSearch(e.target.value)}
+                        className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent w-full sm:w-[220px] text-sm text-slate-700"
+                    />
+                </div>
+                
+                <div className="relative w-full sm:w-auto">
+                    <select
+                        value={timelineAuditorFilter}
+                        onChange={(e) => setTimelineAuditorFilter(e.target.value)}
+                        className="py-2 pl-3 pr-8 bg-white border border-slate-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm text-slate-700 w-full appearance-none"
+                    >
+                        <option value="all">Todos os Auditores</option>
+                        {availableAuditors.map((aud: string) => (
+                            <option key={aud} value={aud}>{aud}</option>
+                        ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                    </div>
+                </div>
+
+                <div className="relative w-full sm:w-auto">
+                    <select
+                        value={timelineSeverityFilter}
+                        onChange={(e) => setTimelineSeverityFilter(e.target.value)}
+                        className="py-2 pl-3 pr-8 bg-white border border-slate-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm text-slate-700 w-full appearance-none"
+                    >
+                        <option value="all">Todas Severidades</option>
+                        <option value="high">Crítico</option>
+                        <option value="medium">Médio/Normal</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                    </div>
+                </div>
             </div>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-            {cards.map((card) => (
+            {filteredCards.length === 0 ? (
+                <div className="col-span-1 xl:col-span-2 py-10 flex flex-col items-center justify-center text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                    <Search className="w-8 h-8 text-slate-400 mb-2" />
+                    <p className="font-semibold">Nenhuma divergência encontrada com estes filtros.</p>
+                </div>
+            ) : filteredCards.map((card: any) => (
             <div key={card.id} className="bg-white p-8 rounded-xl shadow-sm border border-transparent hover:border-slate-200 hover:shadow-md transition-all flex flex-col group relative overflow-hidden">
                 <div className={cn("absolute top-0 left-0 w-1.5 h-full", card.severity === "high" ? "bg-error" : "bg-amber-400")}></div>
                 <div className="flex justify-between items-start mb-6 gap-4">
