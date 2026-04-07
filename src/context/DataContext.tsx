@@ -6,6 +6,7 @@ import React, {
   useEffect,
 } from "react";
 import { AttendanceRecord, AuditorConfig, TechnicianConfig, UserConfig } from "../types";
+import { supabase } from "../lib/supabase";
 
 export interface MonitoringRecord {
   "DATA/HORA_ABERTURA": string | number;
@@ -38,9 +39,10 @@ interface DataContextType {
   auditors: AuditorConfig[];
   setAuditors: (auds: AuditorConfig[]) => void;
   
-  // Auth mock
+  // Auth state
   currentUser: UserConfig | null;
   setCurrentUser: (user: UserConfig | null) => void;
+  authLoading: boolean;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -84,7 +86,50 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = usePersistedState<UserConfig[]>("sys_users", DEFAULT_USERS);
   const [technicians, setTechnicians] = usePersistedState<TechnicianConfig[]>("sys_techs", []);
   const [auditors, setAuditors] = usePersistedState<AuditorConfig[]>("sys_auditors", []);
-  const [currentUser, setCurrentUser] = usePersistedState<UserConfig | null>("sys_current_user", null);
+  
+  // Supabase Auth State
+  const [currentUser, setCurrentUser] = useState<UserConfig | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    // Busca a sessão inicial
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        // Simulando a configuração default como admin.
+        // O ideal é buscar o banco de dados em public.users para pegar o role real.
+        setCurrentUser({
+          id: session.user.id,
+          name: session.user.user_metadata?.name || session.user.email?.split("@")[0] || "Usuário",
+          email: session.user.email || "",
+          password: "",
+          role: "admin",
+          active: true
+        });
+      } else {
+        setCurrentUser(null);
+      }
+      setAuthLoading(false);
+    });
+
+    // Escuta mudanças (login, logout, etc)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setCurrentUser({
+          id: session.user.id,
+          name: session.user.user_metadata?.name || session.user.email?.split("@")[0] || "Usuário",
+          email: session.user.email || "",
+          password: "",
+          role: "admin",
+          active: true
+        });
+      } else {
+        setCurrentUser(null);
+      }
+      setAuthLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <DataContext.Provider value={{ 
@@ -94,7 +139,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       users, setUsers,
       technicians, setTechnicians,
       auditors, setAuditors,
-      currentUser, setCurrentUser
+      currentUser, setCurrentUser,
+      authLoading
     }}>
       {children}
     </DataContext.Provider>

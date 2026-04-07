@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Search, Bell, Settings, User, Wrench, ShieldCheck, Users, Palette, Moon } from "lucide-react";
+import { Search, Bell, Settings, User, Wrench, ShieldCheck, Users, Palette, Moon, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useData } from "../../context/DataContext";
+import { supabase } from "../../lib/supabase";
 
 interface TopBarProps {
   title: string;
@@ -12,13 +13,18 @@ export default function TopBar({ title }: TopBarProps) {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsMenuOpen(false);
         setIsThemeMenuOpen(false);
+      }
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -37,7 +43,12 @@ export default function TopBar({ title }: TopBarProps) {
     const isDark = document.documentElement.classList.toggle('dark');
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
     setIsMenuOpen(false);
-  }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/login");
+  };
 
   return (
     <header className="fixed top-0 right-0 left-72 h-20 flex justify-between items-center px-10 z-40 bg-surface/90 backdrop-blur-2xl border-b border-outline-variant/5 transition-colors duration-300">
@@ -112,22 +123,40 @@ export default function TopBar({ title }: TopBarProps) {
 
         <div className="h-10 w-px bg-slate-200/50 dark:bg-slate-700/50"></div>
 
-        <div className="flex items-center gap-4 cursor-pointer group">
-          <div className="text-right">
-            <p className="text-sm font-black text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-300">{currentUser?.name || "Usuário"}</p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold">
-              {currentUser?.role === 'admin' ? "Administrador" : currentUser?.role === 'gerente' ? "Gerente" : "Visualizador"}
-            </p>
+        <div className="relative" ref={profileMenuRef}>
+          <div 
+            className="flex items-center gap-4 cursor-pointer group"
+            onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+          >
+            <div className="text-right">
+              <p className="text-sm font-black text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-300">
+                {currentUser?.name || "Usuário"}
+              </p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold">
+                {currentUser?.role === 'admin' ? "Administrador" : currentUser?.role === 'gerente' ? "Gerente" : "Visualizador"}
+              </p>
+            </div>
+            {currentUser?.photoUrl ? (
+              <img
+                src={currentUser.photoUrl}
+                alt="User"
+                className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100/50 dark:ring-slate-800 group-hover:ring-indigo-400 dark:group-hover:ring-indigo-500 shadow-sm transition-all duration-300 group-hover:scale-105 ease-out"
+              />
+            ) : (
+              <div className="w-11 h-11 rounded-full border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/40 ease-out">
+                {currentUser?.name?.substring(0, 2).toUpperCase() || "US"}
+              </div>
+            )}
           </div>
-          {currentUser?.photoUrl ? (
-            <img
-              src={currentUser.photoUrl}
-              alt="User"
-              className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100/50 dark:ring-slate-800 group-hover:ring-indigo-400 dark:group-hover:ring-indigo-500 shadow-sm transition-all duration-300 group-hover:scale-105 ease-out"
-            />
-          ) : (
-            <div className="w-11 h-11 rounded-full border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/40 ease-out">
-              {currentUser?.name?.substring(0, 2).toUpperCase() || "US"}
+          
+          {isProfileMenuOpen && (
+            <div className="absolute right-0 mt-3 w-48 bg-white dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] border border-slate-100/80 dark:border-slate-700/50 py-2 z-50 animate-in fade-in slide-in-from-top-4">
+              <button 
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+               >
+                <LogOut className="w-4 h-4" /> Sair da conta
+              </button>
             </div>
           )}
         </div>

@@ -11,6 +11,7 @@ import AdminPage from "./pages/AdminPage";
 import LoginPage from "./pages/LoginPage";
 import { motion, AnimatePresence } from "motion/react";
 import { DataProvider, useData } from "./context/DataContext";
+import { KeyRound } from "lucide-react";
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -108,7 +109,19 @@ function AuthenticatedLayout() {
 }
 
 function AppContent() {
-  const { currentUser } = useData();
+  const { currentUser, authLoading } = useData();
+  
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-surface">
+        <div className="w-20 h-20 bg-indigo-50 rounded-2xl flex items-center justify-center text-primary shadow-inner animate-pulse">
+           <KeyRound className="w-10 h-10 animate-spin" style={{ animationDuration: '3s' }} />
+        </div>
+        <p className="mt-4 text-slate-400 font-bold tracking-widest uppercase text-xs">Carregando Sessão...</p>
+      </div>
+    );
+  }
+
   return (
     <Router>
         <Routes>
