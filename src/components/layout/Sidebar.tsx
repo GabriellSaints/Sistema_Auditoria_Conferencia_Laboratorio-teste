@@ -51,7 +51,7 @@ export default function Sidebar() {
               S.M.E
             </h1>
             <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">
-
+              Sistema de Monitoramento de Equipe
             </p>
           </div>
         </div>
