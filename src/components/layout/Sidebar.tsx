@@ -50,9 +50,6 @@ export default function Sidebar() {
             <h1 className="text-xl font-bold tracking-tight text-primary leading-none">
               S.M.E
             </h1>
-            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">
-              Sistema de Monitoramento de Equipe
-            </p>
           </div>
         </div>
       </div>
