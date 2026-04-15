@@ -65,21 +65,28 @@ export default function RankingView() {
     const filteredDiscrepancies = discrepanciesData.filter(r => isMatch(r["DATA/HORA_FECHAMENTO"] || r.DATA_REGISTRO || (r as any).date));
 
     // 1. Calculate Delays
-    const delayMap = new Map<string, { totalDelay: number, faltas: number }>();
+    const delayMap = new Map<string, { totalDelay: number, faltas: number, records: any[] }>();
     filteredAttendance.forEach(r => {
         const collabName = (r.COLABORADOR || "").toUpperCase();
-        if(!delayMap.has(collabName)) delayMap.set(collabName, { totalDelay: 0, faltas: 0 });
+        if(!delayMap.has(collabName)) delayMap.set(collabName, { totalDelay: 0, faltas: 0, records: [] });
         
         const stat = delayMap.get(collabName)!;
         const status = (r.STATUS || "").toUpperCase();
+        
+        let recordDelay = 0;
+        let isFalta = false;
+        
         if (status === "FALTA") {
             stat.faltas += 1;
+            isFalta = true;
         }
 
-        const isJustified = (r.OBERVAÇÃO && r.OBERVAÇÃO.toUpperCase() !== "OK" && r.OBERVAÇÃO.toUpperCase() !== "SEM JUSTIFICATIVA");
+        const isJustified = (r.OBERVAÇÃO && r.OBERVAÇÃO.toUpperCase() !== "OK" && r.OBERVAÇÃO.toUpperCase() !== "SEM JUSTIFICATIVA" && !r.OBERVAÇÃO.toUpperCase().includes("ATRASO"));
         const auditorConfig = auditors.find(a => a.name.toUpperCase() === collabName);
         
-        if (auditorConfig && !isJustified && status !== "FALTA") {
+        if (status === "ATRASO" && r.MINUTOS_ATRASO) {
+            recordDelay = r.MINUTOS_ATRASO;
+        } else if (auditorConfig && !isJustified && status !== "FALTA") {
             let escalaDia: any = auditorConfig.escala; // Fallback
 
             let regDate: Date;
@@ -130,12 +137,31 @@ export default function RankingView() {
 
                 const escE = parseTime(escalaDia.entrada);
                 const recE = parseTime(r.ENTRADA);
-                if (recE && escE && recE > escE) stat.totalDelay += (recE - escE);
+                if (recE && escE && recE > escE) recordDelay += (recE - escE);
 
                 const escVA = parseTime(escalaDia.saidaAlmoco);
                 const recVA = parseTime(r.SAIDA_ALMOÇO);
-                if (recVA && escVA && recVA > escVA) stat.totalDelay += (recVA - escVA);
+                if (recVA && escVA && recVA > escVA) recordDelay += (recVA - escVA);
             }
+        }
+
+        stat.totalDelay += recordDelay;
+
+        if (recordDelay > 0 || isFalta) {
+            let dataStr = String(r.DATA_REGISTRO);
+            if (typeof r.DATA_REGISTRO === 'number') {
+                const d = new Date((r.DATA_REGISTRO - 25569) * 86400 * 1000);
+                dataStr = d.toLocaleDateString('pt-BR');
+            } else if (dataStr.length >= 10) {
+                const parts = dataStr.substring(0, 10).split("-");
+                if (parts.length === 3) dataStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+
+            stat.records.push({
+                date: dataStr,
+                delay: recordDelay,
+                isFalta
+            });
         }
     });
 
@@ -163,7 +189,7 @@ export default function RankingView() {
         const baseScore = 1000;
         const osPoints = osCount * 2; // +2 por O.S
         const discPoints = discCount * 5; // +5 por erro achado
-        const delayPenalties = delayData.totalDelay * 1; // -1 pt por min
+        const delayPenalties = delayData.totalDelay * 2; // -2 pts por min
         const faltaPenalties = delayData.faltas * 50; // -50 pt por falta
         
         let finalScore = baseScore + osPoints + discPoints - delayPenalties - faltaPenalties;
@@ -270,6 +296,23 @@ export default function RankingView() {
                            <span>Faltas</span> <span>{displayAuditor.metrics.delayData?.faltas || 0}</span>
                         </p>
                     </div>
+                    
+                    {displayAuditor.metrics.delayData?.records && displayAuditor.metrics.delayData.records.length > 0 && (
+                        <div className="mt-4 max-h-[150px] overflow-y-auto custom-scrollbar pr-2 space-y-2">
+                           <p className="text-[10px] uppercase font-bold tracking-widest text-slate-300 mb-2">Histórico Infração</p>
+                           {displayAuditor.metrics.delayData.records.map((r: any, idx: number) => (
+                               <div key={idx} className="flex justify-between items-center bg-white/5 rounded-lg p-2.5 border border-white/5">
+                                    <span className="text-[10px] text-white/80 font-bold">{r.date}</span>
+                                    {r.isFalta ? (
+                                        <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-md text-right">FALTA (-50pt)</span>
+                                    ) : (
+                                        <span className="text-[10px] font-bold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-md text-right">Atraso: {formatMinutes(r.delay)} (-{r.delay * 2}pt)</span>
+                                    )}
+                               </div>
+                           ))}
+                        </div>
+                    )}
+
                     </div>
                 </div>
                 </div>
@@ -394,7 +437,7 @@ export default function RankingView() {
                         Minuto de Atraso
                         </span>
                     </div>
-                    <span className="text-sm font-black text-amber-600">-1 pt / MIN</span>
+                    <span className="text-sm font-black text-amber-600">-2 pts / MIN</span>
                     </div>
 
                     <div className="flex items-center justify-between p-4 rounded-xl bg-rose-50 border border-rose-100">
