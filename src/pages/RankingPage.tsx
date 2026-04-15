@@ -296,23 +296,7 @@ export default function RankingView() {
                            <span>Faltas</span> <span>{displayAuditor.metrics.delayData?.faltas || 0}</span>
                         </p>
                     </div>
-                    
-                    {displayAuditor.metrics.delayData?.records && displayAuditor.metrics.delayData.records.length > 0 && (
-                        <div className="mt-4 max-h-[150px] overflow-y-auto custom-scrollbar pr-2 space-y-2">
-                           <p className="text-[10px] uppercase font-bold tracking-widest text-slate-300 mb-2">Histórico Infração</p>
-                           {displayAuditor.metrics.delayData.records.map((r: any, idx: number) => (
-                               <div key={idx} className="flex justify-between items-center bg-white/5 rounded-lg p-2.5 border border-white/5">
-                                    <span className="text-[10px] text-white/80 font-bold">{r.date}</span>
-                                    {r.isFalta ? (
-                                        <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-md text-right">FALTA (-50pt)</span>
-                                    ) : (
-                                        <span className="text-[10px] font-bold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-md text-right">Atraso: {formatMinutes(r.delay)} (-{r.delay * 2}pt)</span>
-                                    )}
-                               </div>
-                           ))}
-                        </div>
-                    )}
-
+                    </div>
                     </div>
                 </div>
                 </div>
@@ -373,6 +357,11 @@ export default function RankingView() {
                             {leader.score}
                             <span className="text-[10px] font-bold text-slate-400 dark:text-slate-300 ml-1">PTS</span>
                             </p>
+                            {(leader.metrics.delayData?.totalDelay > 0 || leader.metrics.delayData?.faltas > 0) && (
+                                <p className="text-[9px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded ml-auto w-fit mb-1 border border-rose-100/50" title="Desconto total por Faltas e Atrasos">
+                                    -{leader.metrics.delayData.totalDelay * 2 + leader.metrics.delayData.faltas * 50} pts
+                                </p>
+                            )}
                             <p
                             className={cn(
                                 "text-[9px] font-bold uppercase tracking-widest flex items-center justify-end gap-1",
