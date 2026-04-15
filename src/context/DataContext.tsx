@@ -140,7 +140,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setTechnicians(techsData.map(t => ({
         id: t.id,
         name: t.name,
-        status: t.status
+        status: t.status,
+        category: t.category || undefined
       })));
     }
 

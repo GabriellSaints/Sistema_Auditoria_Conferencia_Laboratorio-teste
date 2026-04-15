@@ -29,10 +29,19 @@ export interface Discrepancy {
 }
 
 // Novos Modelos (Cadastros Administrativos)
+export type TechnicianCategory = 
+  | "Residencial" 
+  | "Condomínio" 
+  | "Corporativo" 
+  | "Infraestrutura - Fusão" 
+  | "Infraestrutura - Lançamento" 
+  | "Terceiros";
+
 export interface TechnicianConfig {
   id: string;
   name: string;
   status: "Ativo" | "Inativo";
+  category?: TechnicianCategory;
 }
 
 export interface HorarioEscala {
