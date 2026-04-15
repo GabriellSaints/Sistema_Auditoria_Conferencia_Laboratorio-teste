@@ -251,7 +251,14 @@ export default function AttendanceView() {
         
         if (status === "ATRASO" && r.MINUTOS_ATRASO) {
             recordDelay = r.MINUTOS_ATRASO;
-            totalDelayManual += recordDelay;
+            const obsStr = (r.OBERVAÇÃO || "").toLowerCase();
+            if (obsStr.includes("entrada")) {
+                tmpEntrada = recordDelay;
+            } else if (obsStr.includes("almoço") || obsStr.includes("almoco") || obsStr.includes("pausa")) {
+                tmpAlmoco = recordDelay;
+            } else {
+                totalDelayManual += recordDelay;
+            }
         } else if (auditorConfig && !isAtestadoOrDecl && status !== "FALTA") {
             let escalaDia: any = auditorConfig.escala; // Fallback
 
@@ -319,10 +326,10 @@ export default function AttendanceView() {
                     recordDelay += tmpAlmoco;
                 }
             }
-            totalDelayEntrada += tmpEntrada;
-            totalDelayAlmoco += tmpAlmoco;
         }
 
+        totalDelayEntrada += tmpEntrada;
+        totalDelayAlmoco += tmpAlmoco;
         collabStat.totalDelay += recordDelay;
         totalDelayMinutes += recordDelay;
 
@@ -730,14 +737,24 @@ export default function AttendanceView() {
                     )}
 
                     <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Observação / Justificativa</label>
-                        <input 
-                            type="text" 
-                            placeholder="Ex: Doente, Sem Justificativa, OK"
-                            value={formData.OBERVAÇÃO} 
+                        <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Observação / Período do Atraso</label>
+                        <select
+                            value={formData.OBERVAÇÃO}
                             onChange={(e) => handleInputChange("OBERVAÇÃO", e.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary shadow-sm"
-                        />
+                            className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary shadow-sm font-semibold text-slate-700"
+                        >
+                            <option value="">Selecione a justificativa ou período...</option>
+                            <optgroup label="Período de Atraso (Manuais)">
+                                <option value="Atraso na Entrada">Atraso na Entrada</option>
+                                <option value="Atraso na Volta do Almoço">Atraso na Volta do Almoço</option>
+                            </optgroup>
+                            <optgroup label="Faltas / Ocorrências">
+                                <option value="Sem Justificativa">Sem Justificativa</option>
+                                <option value="Doente / Problemas de Saúde">Doente / Problemas de Saúde</option>
+                                <option value="Problemas de Transporte">Problemas de Transporte</option>
+                                <option value="Outros">Outros</option>
+                            </optgroup>
+                        </select>
                     </div>
                 </div>
                 
