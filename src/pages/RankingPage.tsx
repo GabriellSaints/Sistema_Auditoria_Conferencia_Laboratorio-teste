@@ -403,7 +403,6 @@ export default function RankingView() {
                             })}
                         </div>
                     </div>
-                </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
