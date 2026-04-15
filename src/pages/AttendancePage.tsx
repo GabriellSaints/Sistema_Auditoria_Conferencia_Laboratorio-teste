@@ -214,6 +214,9 @@ export default function AttendanceView() {
     if (!filteredAttendanceData || filteredAttendanceData.length === 0) return null;
 
     let totalDelayMinutes = 0;
+    let totalDelayEntrada = 0;
+    let totalDelayAlmoco = 0;
+    let totalDelayManual = 0;
     let totalFaltas = 0;
     let totalJustificados = 0;
 
@@ -242,10 +245,13 @@ export default function AttendanceView() {
 
         // Calculate Delay based on expected schema!
         let recordDelay = 0;
+        let tmpEntrada = 0;
+        let tmpAlmoco = 0;
         const auditorConfig = auditors.find(a => a.name.toUpperCase() === collabName);
         
         if (status === "ATRASO" && r.MINUTOS_ATRASO) {
             recordDelay = r.MINUTOS_ATRASO;
+            totalDelayManual += recordDelay;
         } else if (auditorConfig && !isAtestadoOrDecl && status !== "FALTA") {
             let escalaDia: any = auditorConfig.escala; // Fallback
 
@@ -302,15 +308,19 @@ export default function AttendanceView() {
                 const escEntrada = parseTime(escalaDia.entrada);
                 const recEntrada = parseTime(r.ENTRADA);
                 if (recEntrada && escEntrada && recEntrada > escEntrada) {
-                    recordDelay += (recEntrada - escEntrada);
+                    tmpEntrada = (recEntrada - escEntrada);
+                    recordDelay += tmpEntrada;
                 }
 
                 const escVoltaAlmoco = parseTime(escalaDia.saidaAlmoco); // Volta do almoço
                 const recVoltaAlmoco = parseTime(r.SAIDA_ALMOÇO);
                 if (recVoltaAlmoco && escVoltaAlmoco && recVoltaAlmoco > escVoltaAlmoco) {
-                    recordDelay += (recVoltaAlmoco - escVoltaAlmoco);
+                    tmpAlmoco = (recVoltaAlmoco - escVoltaAlmoco);
+                    recordDelay += tmpAlmoco;
                 }
             }
+            totalDelayEntrada += tmpEntrada;
+            totalDelayAlmoco += tmpAlmoco;
         }
 
         collabStat.totalDelay += recordDelay;
@@ -334,6 +344,9 @@ export default function AttendanceView() {
 
     return { 
         totalDelayMinutes, 
+        totalDelayEntrada,
+        totalDelayAlmoco,
+        totalDelayManual,
         totalFaltas, 
         totalJustificados, 
         ranking: rankingDecrescente, 
@@ -415,14 +428,32 @@ export default function AttendanceView() {
           </div>
       ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="bg-white p-6 rounded-2xl border border-outline-variant/10 shadow-sm relative overflow-hidden">
                 <div className="absolute right-0 top-0 bottom-0 w-2 bg-error"></div>
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Volumetria Negativa</p>
                 <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-black text-error font-headline">{formatMinutes(stats.totalDelayMinutes)}</span>
                 </div>
-                <p className="text-xs font-bold text-slate-400 mt-2">Em minutos perdidos (Atrasos)</p>
+                <p className="text-xs font-bold text-slate-400 mt-2">Minutos perdidos totais</p>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl border border-outline-variant/10 shadow-sm relative overflow-hidden">
+                <div className="absolute right-0 top-0 bottom-0 w-2 bg-orange-400"></div>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Atrasos na Entrada</p>
+                <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black text-orange-400 font-headline">{formatMinutes(stats.totalDelayEntrada)}</span>
+                </div>
+                <p className="text-xs font-bold text-slate-400 mt-2">Início do expediente</p>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl border border-outline-variant/10 shadow-sm relative overflow-hidden">
+                <div className="absolute right-0 top-0 bottom-0 w-2 bg-amber-500"></div>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Atrasos no Almoço</p>
+                <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black text-amber-500 font-headline">{formatMinutes(stats.totalDelayAlmoco)}</span>
+                </div>
+                <p className="text-xs font-bold text-slate-400 mt-2">Retorno de pausa {stats.totalDelayManual > 0 && `(Manuais: ${formatMinutes(stats.totalDelayManual)})`}</p>
                 </div>
 
                 <div className="bg-white p-6 rounded-2xl border border-outline-variant/10 shadow-sm relative overflow-hidden">
