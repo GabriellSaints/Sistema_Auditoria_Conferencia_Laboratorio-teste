@@ -22,6 +22,12 @@ export default function AttendanceView() {
   const { attendanceData, setAttendanceData, auditors } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Filter State
+  const [filterDate, setFilterDate] = useState("");
+  const [filterCollab, setFilterCollab] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterObs, setFilterObs] = useState("");
+
   // Form State
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [formData, setFormData] = useState({
@@ -182,8 +188,30 @@ export default function AttendanceView() {
     setIsModalOpen(false);
   };
 
+  const filteredAttendanceData = useMemo(() => {
+    return attendanceData.filter(item => {
+        if (filterDate) {
+            let dataStr = String(item.DATA_REGISTRO);
+            if (typeof item.DATA_REGISTRO === 'number') {
+                const d = new Date((item.DATA_REGISTRO - 25569) * 86400 * 1000);
+                dataStr = d.toISOString().split('T')[0];
+            } else if (dataStr.length > 10) {
+                dataStr = dataStr.substring(0, 10);
+            }
+            if (!dataStr.includes(filterDate)) return false;
+        }
+        if (filterCollab && (item.COLABORADOR || "").toUpperCase() !== filterCollab) return false;
+        if (filterStatus && (item.STATUS || "").toUpperCase() !== filterStatus) return false;
+        if (filterObs) {
+            const obsStr = (item.OBERVAÇÃO || "S/ Info").toLowerCase();
+            if (!obsStr.includes(filterObs.toLowerCase())) return false;
+        }
+        return true;
+    });
+  }, [attendanceData, filterDate, filterCollab, filterStatus, filterObs]);
+
   const stats = useMemo(() => {
-    if (!attendanceData || attendanceData.length === 0) return null;
+    if (!filteredAttendanceData || filteredAttendanceData.length === 0) return null;
 
     let totalDelayMinutes = 0;
     let totalFaltas = 0;
@@ -192,7 +220,8 @@ export default function AttendanceView() {
     const collabStats = new Map<string, { name: string, totalDelay: number, faltas: number, records: any[] }>();
     const enhancedRecords: any[] = [];
 
-    attendanceData.forEach((r, originalIndex) => {
+    filteredAttendanceData.forEach((r) => {
+        const originalIndex = attendanceData.indexOf(r);
         const collabName = (r.COLABORADOR || "Desconhecido").toUpperCase();
         if (!collabStats.has(collabName)) {
             collabStats.set(collabName, { name: collabName, totalDelay: 0, faltas: 0, records: [] });
@@ -310,7 +339,7 @@ export default function AttendanceView() {
         ranking: rankingDecrescente, 
         tableData: enhancedRecords.reverse().slice(0, 100) 
     };
-  }, [attendanceData, auditors]);
+  }, [filteredAttendanceData, attendanceData, auditors]);
 
   const formatMinutes = (m: number) => {
       if (m < 60) return `${m}m`;
@@ -336,6 +365,42 @@ export default function AttendanceView() {
         >
             <Plus className="w-5 h-5" /> NOVO REGISTRO
         </button>
+      </div>
+
+      <div className="bg-white p-4 items-end rounded-xl border border-outline-variant/10 shadow-sm flex flex-wrap gap-4 mb-6">
+          <div className="flex-1 min-w-[150px]">
+              <label className="text-[10px] font-bold text-slate-500 uppercase">Data</label>
+              <input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} className="w-full mt-1 border border-slate-200 rounded px-3 py-2 text-sm outline-none focus:border-primary font-bold text-slate-700" />
+          </div>
+          <div className="flex-1 min-w-[200px]">
+              <label className="text-[10px] font-bold text-slate-500 uppercase">Colaborador</label>
+              <select value={filterCollab} onChange={e => setFilterCollab(e.target.value)} className="w-full mt-1 border border-slate-200 rounded px-3 py-2 text-sm outline-none focus:border-primary font-bold text-slate-700 uppercase">
+                  <option value="">TODOS</option>
+                  {auditors.map(a => <option key={a.id} value={a.name.toUpperCase()}>{a.name}</option>)}
+              </select>
+          </div>
+          <div className="flex-1 min-w-[150px]">
+              <label className="text-[10px] font-bold text-slate-500 uppercase">Status</label>
+              <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="w-full mt-1 border border-slate-200 rounded px-3 py-2 text-sm outline-none focus:border-primary font-bold text-slate-700 uppercase">
+                  <option value="">TODOS</option>
+                  <option value="ATRASO">Atraso</option>
+                  <option value="FALTA">Falta</option>
+                  <option value="ATESTADO">Atestado</option>
+                  <option value="DECLARAÇÃO">Declaração</option>
+              </select>
+          </div>
+          <div className="flex-[2] min-w-[200px]">
+              <label className="text-[10px] font-bold text-slate-500 uppercase">Observação</label>
+              <input type="text" placeholder="Buscar obs..." value={filterObs} onChange={e => setFilterObs(e.target.value)} className="w-full mt-1 border border-slate-200 rounded px-3 py-2 text-sm outline-none focus:border-primary font-bold text-slate-700" />
+          </div>
+          {(filterDate || filterCollab || filterStatus || filterObs) && (
+              <button 
+                  onClick={() => { setFilterDate(''); setFilterCollab(''); setFilterStatus(''); setFilterObs(''); }}
+                  className="px-4 py-2 mt-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-xs font-bold transition-all uppercase tracking-widest flex items-center gap-1 justify-center h-[42px]"
+              >
+                  <X className="w-4 h-4"/> Limpar Filtros
+              </button>
+          )}
       </div>
 
       {!stats ? (
