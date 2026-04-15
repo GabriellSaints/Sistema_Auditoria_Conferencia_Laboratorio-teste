@@ -24,13 +24,98 @@ import {
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useData } from "../context/DataContext";
+import { motion, AnimatePresence } from "motion/react";
 
 /* ──────────────────────────────────────────────────────────────────────
-   RANKING PAGE — REDESIGN COMPLETO
-   Princípios: Hierarquia visual (pódio → lista), white-space generoso,
-   tipografia em 2 famílias (Manrope headline + Inter body), micro-interações
-   com transitions, depth via layered shadows, harmonia cromática indigo/slate.
+   RANKING PAGE — REDESIGN COM ANIMAÇÕES
+   Motion: staggered podium cards, cascading list rows, animated panel,
+   counting numbers, shimmer effects, floating trophy, pulse glows.
    ────────────────────────────────────────────────────────────────────── */
+
+// ─── Animated number counter ──────────────────────────────────────────
+function AnimatedScore({ value, className }: { value: number; className?: string }) {
+    const [displayValue, setDisplayValue] = React.useState(0);
+
+    React.useEffect(() => {
+        const duration = 1200;
+        const start = performance.now();
+        const startVal = displayValue;
+
+        const animate = (now: number) => {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            // easeOutExpo
+            const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+            setDisplayValue(Math.round(startVal + (value - startVal) * eased));
+            if (progress < 1) requestAnimationFrame(animate);
+        };
+
+        requestAnimationFrame(animate);
+    }, [value]);
+
+    return <span className={className}>{displayValue}</span>;
+}
+
+// ─── Stagger container variants ──────────────────────────────────────
+const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.12,
+            delayChildren: 0.1,
+        },
+    },
+};
+
+const staggerItem = {
+    hidden: { opacity: 0, y: 30, scale: 0.95 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        transition: { type: "spring", stiffness: 260, damping: 24 },
+    },
+};
+
+const listRowVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: (i: number) => ({
+        opacity: 1,
+        x: 0,
+        transition: {
+            delay: i * 0.05,
+            type: "spring",
+            stiffness: 300,
+            damping: 28,
+        },
+    }),
+};
+
+const detailPanelVariants = {
+    hidden: { opacity: 0, x: 40, scale: 0.97 },
+    visible: {
+        opacity: 1,
+        x: 0,
+        scale: 1,
+        transition: { type: "spring", stiffness: 280, damping: 26, delay: 0.1 },
+    },
+    exit: {
+        opacity: 0,
+        x: 40,
+        scale: 0.97,
+        transition: { duration: 0.2 },
+    },
+};
+
+const breakdownRowVariants = {
+    hidden: { opacity: 0, x: -12 },
+    visible: (i: number) => ({
+        opacity: 1,
+        x: 0,
+        transition: { delay: 0.3 + i * 0.06, type: "spring", stiffness: 300, damping: 26 },
+    }),
+};
 
 export default function RankingView() {
     const { monitoringData, discrepanciesData, attendanceData, auditors } = useData();
@@ -239,7 +324,6 @@ export default function RankingView() {
 
     // Separação pódio / restante
     const podium = ranking.slice(0, 3);
-    const restOfRanking = ranking.slice(3);
 
     // Pontuação máxima para barra de progresso relativa
     const maxScore = ranking.length > 0 ? ranking[0].score : 1;
@@ -248,25 +332,57 @@ export default function RankingView() {
     // RENDER
     // ═══════════════════════════════════════════════════════════════════
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <motion.div
+            className="space-y-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
+        >
             {/* ═══ HEADER ═══════════════════════════════════════════════════ */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <motion.div
+                className="flex flex-col md:flex-row md:items-end justify-between gap-6"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+            >
                 <div className="max-w-2xl">
                     <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+                        <motion.div
+                            className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25"
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ type: "spring", stiffness: 260, damping: 18, delay: 0.2 }}
+                            whileHover={{ scale: 1.1, rotate: 5 }}
+                        >
                             <Trophy className="w-5 h-5 text-white" />
-                        </div>
-                        <h2 className="text-3xl font-extrabold text-slate-900 font-headline tracking-tight">
+                        </motion.div>
+                        <motion.h2
+                            className="text-3xl font-extrabold text-slate-900 font-headline tracking-tight"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.3, duration: 0.4 }}
+                        >
                             Ranking Geral
-                        </h2>
+                        </motion.h2>
                     </div>
-                    <p className="text-slate-500 text-sm leading-relaxed ml-[52px]">
+                    <motion.p
+                        className="text-slate-500 text-sm leading-relaxed ml-[52px]"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5, duration: 0.4 }}
+                    >
                         Pontuação consolidada por produtividade, assertividade e compliance de jornada.
-                    </p>
+                    </motion.p>
                 </div>
 
                 {/* Filtro de Competência */}
-                <div className="bg-white p-3 pr-5 rounded-2xl shadow-sm border border-slate-200/60 flex items-center gap-3 hover:shadow-md hover:border-slate-300/60 transition-all duration-300 group">
+                <motion.div
+                    className="bg-white p-3 pr-5 rounded-2xl shadow-sm border border-slate-200/60 flex items-center gap-3 hover:shadow-md hover:border-slate-300/60 transition-all duration-300 group"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4, duration: 0.4 }}
+                    whileHover={{ y: -2 }}
+                >
                     <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-300">
                         <CalendarDays className="w-5 h-5" />
                     </div>
@@ -280,41 +396,59 @@ export default function RankingView() {
                                 className="bg-transparent border-none p-0 text-sm font-bold text-slate-800 outline-none cursor-pointer focus:ring-0 uppercase font-headline"
                             />
                             {filterMonth && (
-                                <button
+                                <motion.button
                                     onClick={() => setFilterMonth("")}
                                     className="text-slate-300 hover:text-rose-500 transition-colors bg-slate-50 hover:bg-rose-50 rounded-full p-1"
                                     title="Limpar filtro"
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    exit={{ scale: 0 }}
+                                    whileHover={{ scale: 1.2 }}
+                                    whileTap={{ scale: 0.8 }}
                                 >
                                     <XCircle className="w-4 h-4" />
-                                </button>
+                                </motion.button>
                             )}
                         </div>
                     </div>
-                </div>
-            </div>
+                </motion.div>
+            </motion.div>
 
             {/* ═══ ESTADO VAZIO ═══════════════════════════════════════════ */}
             {!ranking || ranking.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 text-center space-y-5">
-                    <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center border border-slate-200 shadow-inner">
+                <motion.div
+                    className="flex flex-col items-center justify-center py-24 text-center space-y-5"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <motion.div
+                        className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center border border-slate-200 shadow-inner"
+                        animate={{ y: [0, -8, 0] }}
+                        transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                    >
                         <Users className="w-9 h-9 text-slate-300" />
-                    </div>
+                    </motion.div>
                     <div className="max-w-sm">
                         <h3 className="text-xl font-bold text-slate-700 font-headline mb-1.5">Sem Auditores Ativos</h3>
                         <p className="text-slate-500 text-sm">Configure a Escala de Auditores no painel de Configurações Globais para visualizar o ranking.</p>
                     </div>
-                </div>
+                </motion.div>
             ) : (
                 <>
                     {/* ═══ PÓDIO — TOP 3 ═════════════════════════════════════ */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <motion.div
+                        className="grid grid-cols-1 md:grid-cols-3 gap-5"
+                        variants={staggerContainer}
+                        initial="hidden"
+                        animate="visible"
+                    >
                         {[1, 0, 2].map((podiumIndex) => {
                             const person = podium[podiumIndex];
                             if (!person) return null;
 
                             const isFirst = person.rank === 1;
                             const isSecond = person.rank === 2;
-                            const isThird = person.rank === 3;
 
                             const medalColors = isFirst
                                 ? "from-amber-400 via-yellow-300 to-amber-500"
@@ -333,33 +467,57 @@ export default function RankingView() {
                                 : "bg-white text-slate-900 border-slate-200/60 shadow-lg shadow-slate-200/40 hover:shadow-xl";
 
                             return (
-                                <div
+                                <motion.div
                                     key={person.id}
+                                    variants={staggerItem}
                                     onClick={() => setSelectedAuditorId(person.id)}
                                     className={cn(
-                                        "relative rounded-2xl border p-6 cursor-pointer transition-all duration-300 group overflow-hidden",
+                                        "relative rounded-2xl border p-6 cursor-pointer transition-shadow duration-300 group overflow-hidden",
                                         cardBg,
                                         isFirst ? "md:row-span-1 md:-mt-4 md:mb-0" : "",
                                         selectedAuditorId === person.id && !isFirst ? "ring-2 ring-indigo-400 border-indigo-300" : ""
                                     )}
+                                    whileHover={{
+                                        y: -6,
+                                        transition: { type: "spring", stiffness: 400, damping: 20 }
+                                    }}
+                                    whileTap={{ scale: 0.98 }}
                                 >
-                                    {/* Decorative glow */}
+                                    {/* Animated decorative glow */}
                                     {isFirst && (
                                         <>
-                                            <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
-                                            <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none" />
+                                            <motion.div
+                                                className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"
+                                                animate={{
+                                                    scale: [1, 1.2, 1],
+                                                    opacity: [0.3, 0.6, 0.3],
+                                                }}
+                                                transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                                            />
+                                            <motion.div
+                                                className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"
+                                                animate={{
+                                                    scale: [1, 1.3, 1],
+                                                    opacity: [0.2, 0.5, 0.2],
+                                                }}
+                                                transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
+                                            />
                                         </>
                                     )}
 
                                     <div className="relative z-10">
                                         {/* Medal badge */}
                                         <div className="flex items-center justify-between mb-5">
-                                            <div className={cn(
-                                                "w-9 h-9 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-md text-white",
-                                                medalColors
-                                            )}>
+                                            <motion.div
+                                                className={cn(
+                                                    "w-9 h-9 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-md text-white",
+                                                    medalColors
+                                                )}
+                                                whileHover={{ rotate: [0, -10, 10, 0], scale: 1.15 }}
+                                                transition={{ duration: 0.5 }}
+                                            >
                                                 {medalIcon}
-                                            </div>
+                                            </motion.div>
                                             <span className={cn(
                                                 "text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full",
                                                 isFirst
@@ -378,12 +536,15 @@ export default function RankingView() {
 
                                         {/* Avatar + Name */}
                                         <div className="flex items-center gap-4 mb-5">
-                                            <div className={cn(
-                                                "w-14 h-14 rounded-2xl overflow-hidden shrink-0 shadow-md",
-                                                isFirst ? "ring-2 ring-white/20" : "ring-1 ring-slate-200"
-                                            )}>
+                                            <motion.div
+                                                className={cn(
+                                                    "w-14 h-14 rounded-2xl overflow-hidden shrink-0 shadow-md",
+                                                    isFirst ? "ring-2 ring-white/20" : "ring-1 ring-slate-200"
+                                                )}
+                                                whileHover={{ scale: 1.08 }}
+                                            >
                                                 <img src={person.avatar} alt={person.name} className="w-full h-full object-cover" />
-                                            </div>
+                                            </motion.div>
                                             <div className="min-w-0">
                                                 <p className={cn(
                                                     "font-bold font-headline text-base uppercase truncate",
@@ -416,89 +577,93 @@ export default function RankingView() {
                                                     "text-2xl font-black font-headline leading-none",
                                                     isFirst ? "text-white" : "text-primary"
                                                 )}>
-                                                    {person.score}
+                                                    <AnimatedScore value={person.score} />
                                                     <span className={cn(
                                                         "text-[10px] font-bold ml-1",
                                                         isFirst ? "text-white/40" : "text-slate-400"
                                                     )}>pts</span>
                                                 </span>
                                             </div>
-                                            {/* Progress bar */}
+                                            {/* Animated Progress bar */}
                                             <div className={cn(
                                                 "w-full h-1.5 rounded-full overflow-hidden",
                                                 isFirst ? "bg-white/10" : "bg-slate-200"
                                             )}>
-                                                <div
+                                                <motion.div
                                                     className={cn(
-                                                        "h-full rounded-full transition-all duration-700 ease-out",
+                                                        "h-full rounded-full",
                                                         isFirst ? "bg-gradient-to-r from-amber-400 to-yellow-300" : "bg-gradient-to-r from-indigo-400 to-indigo-600"
                                                     )}
-                                                    style={{ width: `${Math.min((person.score / maxScore) * 100, 100)}%` }}
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${Math.min((person.score / maxScore) * 100, 100)}%` }}
+                                                    transition={{ duration: 1.2, ease: "easeOut", delay: 0.6 }}
                                                 />
                                             </div>
                                         </div>
 
                                         {/* Micro-stats */}
                                         <div className="grid grid-cols-3 gap-2 mt-4">
-                                            <div className={cn(
-                                                "text-center rounded-lg py-2",
-                                                isFirst ? "bg-white/[0.04]" : "bg-slate-50"
-                                            )}>
-                                                <p className={cn(
-                                                    "text-sm font-black font-headline",
-                                                    isFirst ? "text-white" : "text-slate-800"
-                                                )}>{person.metrics.osCount}</p>
-                                                <p className={cn(
-                                                    "text-[9px] uppercase tracking-widest font-bold mt-0.5",
-                                                    isFirst ? "text-white/40" : "text-slate-400"
-                                                )}>O.S</p>
-                                            </div>
-                                            <div className={cn(
-                                                "text-center rounded-lg py-2",
-                                                isFirst ? "bg-white/[0.04]" : "bg-slate-50"
-                                            )}>
-                                                <p className={cn(
-                                                    "text-sm font-black font-headline",
-                                                    isFirst ? "text-white" : "text-slate-800"
-                                                )}>{person.metrics.discCount}</p>
-                                                <p className={cn(
-                                                    "text-[9px] uppercase tracking-widest font-bold mt-0.5",
-                                                    isFirst ? "text-white/40" : "text-slate-400"
-                                                )}>Erros</p>
-                                            </div>
-                                            <div className={cn(
-                                                "text-center rounded-lg py-2",
-                                                isFirst ? "bg-white/[0.04]" : "bg-slate-50"
-                                            )}>
-                                                <p className={cn(
-                                                    "text-sm font-black font-headline",
-                                                    isFirst ? "text-white" : "text-slate-800"
-                                                )}>{formatMinutes(person.metrics.delayData?.totalDelay || 0)}</p>
-                                                <p className={cn(
-                                                    "text-[9px] uppercase tracking-widest font-bold mt-0.5",
-                                                    isFirst ? "text-white/40" : "text-slate-400"
-                                                )}>Atraso</p>
-                                            </div>
+                                            {[
+                                                { val: person.metrics.osCount, label: "O.S" },
+                                                { val: person.metrics.discCount, label: "Erros" },
+                                                { val: formatMinutes(person.metrics.delayData?.totalDelay || 0), label: "Atraso" },
+                                            ].map((stat, si) => (
+                                                <motion.div
+                                                    key={stat.label}
+                                                    className={cn(
+                                                        "text-center rounded-lg py-2",
+                                                        isFirst ? "bg-white/[0.04]" : "bg-slate-50"
+                                                    )}
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: 0.8 + si * 0.1 }}
+                                                >
+                                                    <p className={cn(
+                                                        "text-sm font-black font-headline",
+                                                        isFirst ? "text-white" : "text-slate-800"
+                                                    )}>{stat.val}</p>
+                                                    <p className={cn(
+                                                        "text-[9px] uppercase tracking-widest font-bold mt-0.5",
+                                                        isFirst ? "text-white/40" : "text-slate-400"
+                                                    )}>{stat.label}</p>
+                                                </motion.div>
+                                            ))}
                                         </div>
                                     </div>
-                                </div>
+                                </motion.div>
                             );
                         })}
-                    </div>
+                    </motion.div>
 
                     {/* ═══ CORPO PRINCIPAL — LISTA + DETALHE ════════════════ */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                         {/* ─── LEADERBOARD (2/3) ──────────────────────────── */}
-                        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+                        <motion.div
+                            className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden"
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.5, duration: 0.5, ease: "easeOut" }}
+                        >
                             {/* Table Header */}
                             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                                 <div className="flex items-center gap-2.5">
-                                    <BarChart3 className="w-5 h-5 text-indigo-500" />
+                                    <motion.div
+                                        initial={{ rotate: -90, opacity: 0 }}
+                                        animate={{ rotate: 0, opacity: 1 }}
+                                        transition={{ delay: 0.7, type: "spring" }}
+                                    >
+                                        <BarChart3 className="w-5 h-5 text-indigo-500" />
+                                    </motion.div>
                                     <h3 className="text-base font-bold text-slate-800 font-headline">Classificação Completa</h3>
-                                    <span className="text-[10px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                    <motion.span
+                                        className="text-[10px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider"
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ delay: 0.9, type: "spring", stiffness: 500 }}
+                                    >
                                         {ranking.length} auditores
-                                    </span>
+                                    </motion.span>
                                 </div>
                             </div>
 
@@ -518,8 +683,12 @@ export default function RankingView() {
                                     const isSelected = selectedAuditorId === person.id || (!selectedAuditorId && idx === 0);
 
                                     return (
-                                        <div
+                                        <motion.div
                                             key={person.id}
+                                            custom={idx}
+                                            variants={listRowVariants}
+                                            initial="hidden"
+                                            animate="visible"
                                             onClick={() => setSelectedAuditorId(person.id)}
                                             className={cn(
                                                 "grid grid-cols-12 px-6 py-3.5 items-center cursor-pointer transition-all duration-200 border-b border-slate-50 group",
@@ -527,18 +696,23 @@ export default function RankingView() {
                                                     ? "bg-indigo-50/50 border-l-[3px] border-l-indigo-500"
                                                     : "hover:bg-slate-50/80 border-l-[3px] border-l-transparent"
                                             )}
+                                            whileHover={{ x: 4, backgroundColor: "rgba(238, 242, 255, 0.5)" }}
+                                            whileTap={{ scale: 0.995 }}
                                         >
                                             {/* Rank */}
                                             <div className="col-span-1">
-                                                <div className={cn(
-                                                    "w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black",
-                                                    person.rank === 1 ? "bg-gradient-to-br from-amber-300 to-amber-500 text-white shadow-sm shadow-amber-500/20" :
-                                                        person.rank === 2 ? "bg-slate-300 text-white" :
-                                                            person.rank === 3 ? "bg-amber-700/60 text-white" :
-                                                                "bg-slate-100 text-slate-500"
-                                                )}>
+                                                <motion.div
+                                                    className={cn(
+                                                        "w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black",
+                                                        person.rank === 1 ? "bg-gradient-to-br from-amber-300 to-amber-500 text-white shadow-sm shadow-amber-500/20" :
+                                                            person.rank === 2 ? "bg-slate-300 text-white" :
+                                                                person.rank === 3 ? "bg-amber-700/60 text-white" :
+                                                                    "bg-slate-100 text-slate-500"
+                                                    )}
+                                                    whileHover={person.rank <= 3 ? { scale: 1.2, rotate: 5 } : {}}
+                                                >
                                                     {person.rank}
-                                                </div>
+                                                </motion.div>
                                             </div>
 
                                             {/* Avatar + Name */}
@@ -582,125 +756,162 @@ export default function RankingView() {
                                                     isSelected ? "text-indigo-500 translate-x-0" : "text-slate-300 -translate-x-1 group-hover:translate-x-0 group-hover:text-slate-500"
                                                 )} />
                                             </div>
-                                        </div>
+                                        </motion.div>
                                     );
                                 })}
                             </div>
-                        </div>
+                        </motion.div>
 
                         {/* ─── PAINEL DE DETALHE (1/3) ─────────────────────── */}
-                        {selectedAuditor && (
-                            <div className="lg:col-span-1 space-y-5">
+                        <AnimatePresence mode="wait">
+                            {selectedAuditor && (
+                                <motion.div
+                                    key={selectedAuditor.id}
+                                    className="lg:col-span-1 space-y-5"
+                                    variants={detailPanelVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    exit="exit"
+                                >
+                                    {/* Card do auditor */}
+                                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+                                        <motion.div
+                                            className="flex items-center gap-4 mb-5"
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.15 }}
+                                        >
+                                            <motion.div
+                                                className="w-14 h-14 rounded-2xl overflow-hidden shadow-md ring-1 ring-slate-200 shrink-0"
+                                                initial={{ scale: 0.5 }}
+                                                animate={{ scale: 1 }}
+                                                transition={{ type: "spring", stiffness: 300 }}
+                                            >
+                                                <img src={selectedAuditor.avatar} alt={selectedAuditor.name} className="w-full h-full object-cover" />
+                                            </motion.div>
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-black text-slate-900 uppercase truncate font-headline">{selectedAuditor.name}</p>
+                                                <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mt-0.5">{selectedAuditor.level} — #{selectedAuditor.rank}</p>
+                                            </div>
+                                        </motion.div>
 
-                                {/* Card do auditor */}
-                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
-                                    <div className="flex items-center gap-4 mb-5">
-                                        <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-md ring-1 ring-slate-200 shrink-0">
-                                            <img src={selectedAuditor.avatar} alt={selectedAuditor.name} className="w-full h-full object-cover" />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-black text-slate-900 uppercase truncate font-headline">{selectedAuditor.name}</p>
-                                            <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mt-0.5">{selectedAuditor.level} — #{selectedAuditor.rank}</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Score grande */}
-                                    <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-5 text-white mb-5">
-                                        <p className="text-[10px] uppercase tracking-widest font-bold text-white/40 mb-1">Pontuação Final</p>
-                                        <p className="text-4xl font-black font-headline leading-none">
-                                            {selectedAuditor.score}
-                                            <span className="text-base font-bold text-white/30 ml-1">pts</span>
-                                        </p>
-                                        <div className="w-full h-1 rounded-full bg-white/10 mt-3 overflow-hidden">
-                                            <div
-                                                className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-purple-400 transition-all duration-700"
-                                                style={{ width: `${Math.min((selectedAuditor.score / maxScore) * 100, 100)}%` }}
+                                        {/* Score grande com animação */}
+                                        <motion.div
+                                            className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-5 text-white mb-5 relative overflow-hidden"
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: 0.2, type: "spring" }}
+                                        >
+                                            {/* Shimmer effect */}
+                                            <motion.div
+                                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent pointer-events-none"
+                                                animate={{ x: ["-100%", "200%"] }}
+                                                transition={{ repeat: Infinity, duration: 3, ease: "linear", repeatDelay: 2 }}
                                             />
+                                            <p className="text-[10px] uppercase tracking-widest font-bold text-white/40 mb-1 relative z-10">Pontuação Final</p>
+                                            <p className="text-4xl font-black font-headline leading-none relative z-10">
+                                                <AnimatedScore value={selectedAuditor.score} />
+                                                <span className="text-base font-bold text-white/30 ml-1">pts</span>
+                                            </p>
+                                            <div className="w-full h-1 rounded-full bg-white/10 mt-3 overflow-hidden relative z-10">
+                                                <motion.div
+                                                    className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-purple-400"
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${Math.min((selectedAuditor.score / maxScore) * 100, 100)}%` }}
+                                                    transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
+                                                />
+                                            </div>
+                                        </motion.div>
+
+                                        {/* Breakdown com stagger */}
+                                        <div className="space-y-2.5">
+                                            <motion.p
+                                                className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1"
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                transition={{ delay: 0.25 }}
+                                            >
+                                                Composição da Pontuação
+                                            </motion.p>
+
+                                            {[
+                                                { label: "Base Inicial", value: "1000", barColor: "bg-slate-300", bgColor: "bg-slate-50 border-slate-100", textColor: "text-slate-600", valueColor: "text-slate-500" },
+                                                { label: "O.S Auditadas", value: `+${selectedAuditor.metrics.osPoints}`, barColor: "bg-indigo-400", bgColor: "bg-indigo-50/60 border-indigo-100/60", textColor: "text-indigo-700", valueColor: "text-indigo-600" },
+                                                { label: "Erros Capturados", value: `+${selectedAuditor.metrics.discPoints}`, barColor: "bg-emerald-400", bgColor: "bg-emerald-50/60 border-emerald-100/60", textColor: "text-emerald-700", valueColor: "text-emerald-600" },
+                                                { label: "Atrasos", value: `−${selectedAuditor.metrics.delayPenalties}`, barColor: "bg-amber-400", bgColor: "bg-amber-50/60 border-amber-100/60", textColor: "text-amber-700", valueColor: "text-amber-600" },
+                                                { label: "Faltas", value: `−${selectedAuditor.metrics.faltaPenalties}`, barColor: "bg-rose-400", bgColor: "bg-rose-50/60 border-rose-100/60", textColor: "text-rose-700", valueColor: "text-rose-600" },
+                                            ].map((item, i) => (
+                                                <motion.div
+                                                    key={item.label}
+                                                    custom={i}
+                                                    variants={breakdownRowVariants}
+                                                    initial="hidden"
+                                                    animate="visible"
+                                                    className={cn("flex items-center justify-between py-2 px-3 rounded-lg border", item.bgColor)}
+                                                    whileHover={{ x: 4, transition: { duration: 0.15 } }}
+                                                >
+                                                    <div className="flex items-center gap-2.5">
+                                                        <motion.div
+                                                            className={cn("w-1.5 h-6 rounded-full", item.barColor)}
+                                                            initial={{ scaleY: 0 }}
+                                                            animate={{ scaleY: 1 }}
+                                                            transition={{ delay: 0.4 + i * 0.08, duration: 0.3 }}
+                                                        />
+                                                        <span className={cn("text-xs font-bold", item.textColor)}>{item.label}</span>
+                                                    </div>
+                                                    <span className={cn("text-xs font-black font-headline", item.valueColor)}>{item.value}</span>
+                                                </motion.div>
+                                            ))}
                                         </div>
                                     </div>
 
-                                    {/* Breakdown */}
-                                    <div className="space-y-2.5">
-                                        <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">Composição da Pontuação</p>
-
-                                        {/* BASE */}
-                                        <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50 border border-slate-100">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="w-1.5 h-6 rounded-full bg-slate-300" />
-                                                <span className="text-xs font-bold text-slate-600">Base Inicial</span>
-                                            </div>
-                                            <span className="text-xs font-black text-slate-500 font-headline">1000</span>
+                                    {/* Card Regras */}
+                                    <motion.div
+                                        className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6"
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.6, duration: 0.4 }}
+                                    >
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <motion.div
+                                                animate={{ rotate: [0, 10, -10, 0] }}
+                                                transition={{ repeat: Infinity, duration: 4, ease: "easeInOut", repeatDelay: 3 }}
+                                            >
+                                                <ShieldCheck className="w-4 h-4 text-indigo-500" />
+                                            </motion.div>
+                                            <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500 font-headline">Regras de Pontuação</h4>
                                         </div>
 
-                                        {/* O.S POSITIVO */}
-                                        <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-indigo-50/60 border border-indigo-100/60">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="w-1.5 h-6 rounded-full bg-indigo-400" />
-                                                <span className="text-xs font-bold text-indigo-700">O.S Auditadas</span>
-                                            </div>
-                                            <span className="text-xs font-black text-indigo-600 font-headline">+{selectedAuditor.metrics.osPoints}</span>
+                                        <div className="space-y-2">
+                                            {[
+                                                { label: "Base", value: "1000 pts", color: "bg-slate-400" },
+                                                { label: "O.S", value: "+2 pts/un", color: "bg-indigo-400" },
+                                                { label: "Erros", value: "+5 pts/un", color: "bg-emerald-400" },
+                                                { label: "Atraso", value: "−2 pts/min", color: "bg-amber-400" },
+                                                { label: "Falta", value: "−50 pts/dia", color: "bg-rose-400" },
+                                            ].map((rule, ri) => (
+                                                <motion.div
+                                                    key={rule.label}
+                                                    className="flex items-center justify-between py-1.5"
+                                                    initial={{ opacity: 0, x: -8 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ delay: 0.7 + ri * 0.06 }}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={cn("w-2 h-2 rounded-full", rule.color)} />
+                                                        <span className="text-xs font-semibold text-slate-600">{rule.label}</span>
+                                                    </div>
+                                                    <span className="text-[11px] font-bold text-slate-500 font-headline">{rule.value}</span>
+                                                </motion.div>
+                                            ))}
                                         </div>
-
-                                        {/* ERROS POSITIVO */}
-                                        <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-emerald-50/60 border border-emerald-100/60">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="w-1.5 h-6 rounded-full bg-emerald-400" />
-                                                <span className="text-xs font-bold text-emerald-700">Erros Capturados</span>
-                                            </div>
-                                            <span className="text-xs font-black text-emerald-600 font-headline">+{selectedAuditor.metrics.discPoints}</span>
-                                        </div>
-
-                                        {/* ATRASOS NEGATIVO */}
-                                        <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-amber-50/60 border border-amber-100/60">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="w-1.5 h-6 rounded-full bg-amber-400" />
-                                                <span className="text-xs font-bold text-amber-700">Atrasos</span>
-                                            </div>
-                                            <span className="text-xs font-black text-amber-600 font-headline">−{selectedAuditor.metrics.delayPenalties}</span>
-                                        </div>
-
-                                        {/* FALTAS NEGATIVO */}
-                                        <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-rose-50/60 border border-rose-100/60">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="w-1.5 h-6 rounded-full bg-rose-400" />
-                                                <span className="text-xs font-bold text-rose-700">Faltas</span>
-                                            </div>
-                                            <span className="text-xs font-black text-rose-600 font-headline">−{selectedAuditor.metrics.faltaPenalties}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Card Regras */}
-                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <ShieldCheck className="w-4 h-4 text-indigo-500" />
-                                        <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500 font-headline">Regras de Pontuação</h4>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        {[
-                                            { label: "Base", value: "1000 pts", color: "bg-slate-400" },
-                                            { label: "O.S", value: "+2 pts/un", color: "bg-indigo-400" },
-                                            { label: "Erros", value: "+5 pts/un", color: "bg-emerald-400" },
-                                            { label: "Atraso", value: "−2 pts/min", color: "bg-amber-400" },
-                                            { label: "Falta", value: "−50 pts/dia", color: "bg-rose-400" },
-                                        ].map((rule) => (
-                                            <div key={rule.label} className="flex items-center justify-between py-1.5">
-                                                <div className="flex items-center gap-2">
-                                                    <div className={cn("w-2 h-2 rounded-full", rule.color)} />
-                                                    <span className="text-xs font-semibold text-slate-600">{rule.label}</span>
-                                                </div>
-                                                <span className="text-[11px] font-bold text-slate-500 font-headline">{rule.value}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                            </div>
-                        )}
+                                    </motion.div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </>
             )}
-        </div>
+        </motion.div>
     );
 }
