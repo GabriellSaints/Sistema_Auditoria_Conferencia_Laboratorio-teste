@@ -16,6 +16,7 @@ import {
 import { cn } from "../lib/utils";
 import { useData } from "../context/DataContext";
 import { AttendanceRecord } from "../types";
+import { supabase } from "../lib/supabase";
 
 export default function AttendanceView() {
   const { attendanceData, setAttendanceData, auditors } = useData();
@@ -81,15 +82,24 @@ export default function AttendanceView() {
       setIsModalOpen(true);
   };
 
-  const handleDelete = (originalIndex: number) => {
+  const handleDelete = async (originalIndex: number) => {
       if (window.confirm("Tem certeza que deseja apagar este registro de ponto?")) {
+          const recordToDelete = attendanceData[originalIndex];
+          if (recordToDelete._id) {
+              const { error } = await supabase.from('attendance_records').delete().eq('_id', recordToDelete._id);
+              if (error) {
+                  alert("Erro ao excluir registro no Supabase.");
+                  console.error(error);
+                  return;
+              }
+          }
           const newData = [...attendanceData];
           newData.splice(originalIndex, 1);
           setAttendanceData(newData);
       }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.DATA_REGISTRO || !formData.COLABORADOR || !formData.STATUS) {
         alert("Preencha ao menos Data, Colaborador e Status.");
         return;
@@ -100,24 +110,72 @@ export default function AttendanceView() {
         return;
     }
 
-    const newRecord: AttendanceRecord = {
-        DATA_REGISTRO: formData.DATA_REGISTRO,
-        COLABORADOR: formData.COLABORADOR,
-        STATUS: formData.STATUS,
-        MINUTOS_ATRASO: formData.STATUS === "ATRASO" && formData.MINUTOS_ATRASO ? Number(formData.MINUTOS_ATRASO) : undefined,
-        DIAS_ATESTADO: formData.STATUS === "ATESTADO" ? Number(formData.DIAS_ATESTADO) : undefined,
-        ENTRADA: formData.ENTRADA,
-        ENTRADA_ALMOÇO: formData.ENTRADA_ALMOÇO,
-        SAIDA_ALMOÇO: formData.SAIDA_ALMOÇO,
-        SAIDA: formData.SAIDA,
-        OBERVAÇÃO: formData.OBERVAÇÃO
+    const payload = {
+        data_registro: formData.DATA_REGISTRO,
+        colaborador: formData.COLABORADOR,
+        status: formData.STATUS,
+        minutos_atraso: formData.STATUS === "ATRASO" && formData.MINUTOS_ATRASO ? Number(formData.MINUTOS_ATRASO) : null,
+        dias_atestado: formData.STATUS === "ATESTADO" && formData.DIAS_ATESTADO ? Number(formData.DIAS_ATESTADO) : null,
+        entrada: formData.ENTRADA || null,
+        entrada_almoco: formData.ENTRADA_ALMOÇO || null,
+        saida_almoco: formData.SAIDA_ALMOÇO || null,
+        saida: formData.SAIDA || null,
+        observacao: formData.OBERVAÇÃO || null
     };
 
     if (editingIndex !== null) {
+        const recordToEdit = attendanceData[editingIndex];
+        if (recordToEdit._id) {
+            const { error } = await supabase.from('attendance_records').update(payload).eq('_id', recordToEdit._id);
+            if (error) {
+                alert("Erro ao atualizar registro no Supabase.");
+                console.error(error);
+                return;
+            }
+        }
+        
+        const newRecord: AttendanceRecord = {
+            ...recordToEdit,
+            DATA_REGISTRO: payload.data_registro,
+            COLABORADOR: payload.colaborador,
+            STATUS: payload.status,
+            MINUTOS_ATRASO: payload.minutos_atraso !== null ? payload.minutos_atraso : undefined,
+            DIAS_ATESTADO: payload.dias_atestado !== null ? payload.dias_atestado : undefined,
+            ENTRADA: payload.entrada || undefined,
+            ENTRADA_ALMOÇO: payload.entrada_almoco || undefined,
+            SAIDA_ALMOÇO: payload.saida_almoco || undefined,
+            SAIDA: payload.saida || undefined,
+            OBERVAÇÃO: payload.observacao || undefined
+        };
+        
         const newData = [...attendanceData];
         newData[editingIndex] = newRecord;
         setAttendanceData(newData);
     } else {
+        let generatedId = null;
+        const { data, error } = await supabase.from('attendance_records').insert([payload]).select().single();
+        if (error) {
+            alert("Erro ao salvar registro no Supabase.");
+            console.error(error);
+            return;
+        }
+        if (data) {
+            generatedId = data._id;
+        }
+
+        const newRecord: AttendanceRecord = {
+            _id: generatedId,
+            DATA_REGISTRO: payload.data_registro,
+            COLABORADOR: payload.colaborador,
+            STATUS: payload.status,
+            MINUTOS_ATRASO: payload.minutos_atraso !== null ? payload.minutos_atraso : undefined,
+            DIAS_ATESTADO: payload.dias_atestado !== null ? payload.dias_atestado : undefined,
+            ENTRADA: payload.entrada || undefined,
+            ENTRADA_ALMOÇO: payload.entrada_almoco || undefined,
+            SAIDA_ALMOÇO: payload.saida_almoco || undefined,
+            SAIDA: payload.saida || undefined,
+            OBERVAÇÃO: payload.observacao || undefined
+        };
         setAttendanceData([...attendanceData, newRecord]);
     }
     clearForm();

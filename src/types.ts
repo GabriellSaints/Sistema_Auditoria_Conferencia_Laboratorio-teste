@@ -76,6 +76,8 @@ export interface UserConfig {
 
 // Ponto Exportado (Excel)
 export interface AttendanceRecord {
+  _id?: string;
+  import_id?: string;
   DATA_REGISTRO: string | number;
   COLABORADOR: string;
   STATUS: string;

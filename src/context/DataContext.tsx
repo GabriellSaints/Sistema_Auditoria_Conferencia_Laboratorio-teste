@@ -122,7 +122,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (historyData) setImportHistory(historyData as any[]);
     if (monitoringDataRes) setMonitoringData(monitoringDataRes.map(mapSupabaseToLocal) as any[]);
     if (discrepanciesDataRes) setDiscrepanciesData(discrepanciesDataRes.map(mapSupabaseToLocal) as any[]);
-    if (attendanceDataRes) setAttendanceData(attendanceDataRes as any[]);
+    if (attendanceDataRes) setAttendanceData(attendanceDataRes.map(mapSupabaseToLocalAttendance) as any[]);
 
     if (usersData) {
       setUsers(usersData.map(u => ({
@@ -238,6 +238,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
     "DATA/HORA_FECHAMENTO": row.data_hora_fechamento,
   });
 
+  const mapSupabaseToLocalAttendance = (row: any): Partial<AttendanceRecord> => ({
+    _id: row._id,
+    import_id: row.import_id,
+    DATA_REGISTRO: row.data_registro,
+    COLABORADOR: row.colaborador,
+    STATUS: row.status,
+    MINUTOS_ATRASO: row.minutos_atraso,
+    DIAS_ATESTADO: row.dias_atestado,
+    ENTRADA: row.entrada,
+    ENTRADA_ALMOÇO: row.entrada_almoco,
+    SAIDA_ALMOÇO: row.saida_almoco,
+    SAIDA: row.saida,
+    OBERVAÇÃO: row.observacao,
+  });
   // Sync currentUser with local updates (like photoUrl, roles, etc)
   useEffect(() => {
     if (currentUser) {
