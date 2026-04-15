@@ -202,7 +202,7 @@ export default function RankingView() {
             trend: (osPoints + discPoints) > (delayPenalties + faltaPenalties) ? "+ Alta Perf." : "- Atenção",
             level: finalScore > 1500 ? "Senior Lead" : finalScore > 1100 ? "Auditor Especialista" : finalScore > 900 ? "Auditor Pleno" : "Auditor Júnior",
             avatar: `https://picsum.photos/seed/${a.name.replace(/\s/g, '')}/100/100`,
-            metrics: { osCount, discCount, delayData }
+            metrics: { osCount, discCount, delayData, osPoints, discPoints, delayPenalties, faltaPenalties }
         };
     });
 
@@ -316,71 +316,90 @@ export default function RankingView() {
                             key={leader.id}
                             onClick={() => setSelectedAuditor(leader)}
                             className={cn(
-                                "flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group bg-white relative overflow-hidden cursor-pointer border",
+                                "flex flex-col p-4 rounded-2xl transition-all duration-300 group bg-white relative overflow-hidden cursor-pointer border",
                                 isSelected 
                                    ? "border-indigo-500 shadow-md shadow-indigo-500/10 bg-indigo-50/40 ring-1 ring-indigo-500 z-10" 
                                    : "border-slate-100 hover:border-indigo-200 hover:shadow-sm"
                             )}
                         >
-                        <div className="flex items-center gap-4">
-                        <div
-                            className={cn(
-                            "w-8 h-8 rounded-full flex items-center justify-center font-black text-xs shrink-0 shadow-sm",
-                            leader.rank === 1
-                                ? "bg-gradient-to-br from-amber-300 to-amber-500 text-white shadow-amber-500/30"
-                                : leader.rank === 2
-                                ? "bg-slate-300 text-white"
-                                : leader.rank === 3
-                                    ? "bg-amber-700/60 text-white"
-                                    : "bg-slate-100 text-slate-500",
-                            )}
-                        >
-                            #{leader.rank}
+                            <div className="flex items-center justify-between mb-3 w-full">
+                                <div className="flex items-center gap-4">
+                                    <div
+                                        className={cn(
+                                        "w-8 h-8 rounded-full flex items-center justify-center font-black text-xs shrink-0 shadow-sm",
+                                        leader.rank === 1
+                                            ? "bg-gradient-to-br from-amber-300 to-amber-500 text-white shadow-amber-500/30"
+                                            : leader.rank === 2
+                                            ? "bg-slate-300 text-white"
+                                            : leader.rank === 3
+                                                ? "bg-amber-700/60 text-white"
+                                                : "bg-slate-100 text-slate-500",
+                                        )}
+                                    >
+                                        #{leader.rank}
+                                    </div>
+                                    <img
+                                        src={leader.avatar}
+                                        alt={leader.name}
+                                        className="w-10 h-10 rounded-full object-cover shadow-sm bg-slate-100 shrink-0"
+                                    />
+                                    <div className="min-w-0 pr-4">
+                                        <p className="text-sm font-bold text-slate-900 uppercase truncate">
+                                        {leader.name}
+                                        </p>
+                                        <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate">
+                                        {leader.level}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-end shrink-0">
+                                    <p className="text-base font-black text-primary dark:text-[#a5b4fc] font-headline leading-none mb-1">
+                                    {leader.score}
+                                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-300 ml-1">PTS</span>
+                                    </p>
+                                    <p
+                                        className={cn(
+                                            "text-[9px] font-bold uppercase tracking-widest flex items-center justify-end gap-1 mt-1",
+                                            leader.trend.includes("+")
+                                            ? "text-emerald-500 dark:text-emerald-400"
+                                            : "text-error dark:text-rose-400",
+                                        )}
+                                        >
+                                        {leader.trend.includes("+") ? (
+                                            <TrendingUp className="w-2.5 h-2.5" />
+                                        ) : (
+                                            <TrendingDown className="w-2.5 h-2.5" />
+                                        )}
+                                        {leader.trend}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            {/* Breakdown de Pontos por Regra */}
+                            <div className="grid grid-cols-4 gap-2 pt-3 border-t border-slate-100/60 mt-1">
+                                <div className="flex items-center justify-center bg-slate-50/80 rounded py-1.5 px-2 border border-slate-100">
+                                    <span className="text-[9px] font-bold text-slate-400 flex flex-col items-center">
+                                        BASE <span className="text-slate-600">1000</span>
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-center bg-indigo-50/50 rounded py-1.5 px-2 border border-indigo-50 text-indigo-600">
+                                    <span className="text-[9px] font-bold flex flex-col items-center">
+                                        O.S (POSITIVOS) <span>+{leader.metrics.osPoints}</span>
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-center bg-emerald-50/50 rounded py-1.5 px-2 border border-emerald-50 text-emerald-600">
+                                    <span className="text-[9px] font-bold flex flex-col items-center">
+                                        ERROS (POSITIVOS) <span>+{leader.metrics.discPoints}</span>
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-center bg-rose-50/50 rounded py-1.5 px-2 border border-rose-50 text-error">
+                                    <span className="text-[9px] font-bold flex flex-col items-center">
+                                        ATRASO/FALTA(NEGATIVO) <span>-{(leader.metrics.delayPenalties || 0) + (leader.metrics.faltaPenalties || 0)}</span>
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                        <img
-                            src={leader.avatar}
-                            alt={leader.name}
-                            className="w-10 h-10 rounded-full object-cover shadow-sm bg-slate-100 shrink-0"
-                        />
-                        <div className="min-w-0 pr-4">
-                            <p className="text-sm font-bold text-slate-900 uppercase truncate">
-                            {leader.name}
-                            </p>
-                            <p className="text-[10px] text-slate-500 uppercase tracking-widest truncate">
-                            {leader.level}
-                            </p>
-                        </div>
-                        </div>
-                        <div className="flex items-center gap-6 shrink-0">
-                        <div className="text-right">
-                            <p className="text-base font-black text-primary dark:text-[#a5b4fc] font-headline leading-none mb-1">
-                            {leader.score}
-                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-300 ml-1">PTS</span>
-                            </p>
-                            {(leader.metrics.delayData?.totalDelay > 0 || leader.metrics.delayData?.faltas > 0) && (
-                                <p className="text-[9px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded ml-auto w-fit mb-1 border border-rose-100/50" title="Desconto total por Faltas e Atrasos">
-                                    -{leader.metrics.delayData.totalDelay * 2 + leader.metrics.delayData.faltas * 50} pts
-                                </p>
-                            )}
-                            <p
-                            className={cn(
-                                "text-[9px] font-bold uppercase tracking-widest flex items-center justify-end gap-1",
-                                leader.trend.includes("+")
-                                ? "text-emerald-500 dark:text-emerald-400"
-                                : "text-error dark:text-rose-400",
-                            )}
-                            >
-                            {leader.trend.includes("+") ? (
-                                <TrendingUp className="w-2.5 h-2.5" />
-                            ) : (
-                                <TrendingDown className="w-2.5 h-2.5" />
-                            )}
-                            {leader.trend}
-                            </p>
-                        </div>
-                        </div>
-                    </div>
-                    )})}
+                        )})}
                 </div>
                 </div>
             </div>
